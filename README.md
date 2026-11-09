@@ -1,15 +1,15 @@
 <!--
   NEXUS REMOTE
-  A cloud-hosted Android remote management service.
+  Cloud-hosted Android device management platform.
 -->
 
 <div align="center">
 
 # ✦ NEXUS REMOTE
 
-### Your Android devices. One secure place.
+### One account. Two ways to connect. Your devices, under your control.
 
-**A cloud-hosted Android remote management platform, powered by our own online service and Python backend.**
+A cloud-hosted platform for managing Android devices you own or are explicitly authorized to manage.
 
 <p>
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android">
@@ -18,275 +18,96 @@
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" alt="Active development">
 </p>
 
-[Explore the project](https://github.com/Quincunx33/Control-xp) · [Read the roadmap](docs/ROADMAP.md) · [Report a bug](https://github.com/Quincunx33/Control-xp/issues)
+[Overview](#-overview) · [Features](#-platform-at-a-glance) · [API](#-python-backend-api) · [Developer setup](#-developer-setup) · [Roadmap](docs/ROADMAP.md)
+
+[Architecture](docs/ARCHITECTURE.md) · [Data flow](docs/DATA_FLOW.md) · [Deployment](docs/DEPLOYMENT.md) · [Report an issue](https://github.com/Quincunx33/Control-xp/issues)
 
 </div>
 
 ---
 
-## 👋 What is NEXUS REMOTE?
+## ✦ Overview
 
-NEXUS REMOTE is a project for connecting and managing Android devices that **you own or have permission to manage**.
+**NEXUS REMOTE** is an Android device management platform built around one shared online service. It brings together a native Android application, an official website and a Python backend operated by the project team.
 
-Think of it as a service we operate for you:
+You can use either client:
 
-- 📱 **Android app** — register, sign in, pair devices and manage them directly from your phone.
-- ☁️ **Our online service** — we host and maintain the Python backend on our own infrastructure.
-- 🌐 **Our website** — supports its own registration and login, plus an optional browser dashboard. The same account works on the website and Android app.
+- **Android app:** create an account, sign in, pair devices and manage them directly from your phone.
+- **Official website:** register or sign in with the same account and use the optional web dashboard to manage authorized devices.
+- **One shared account:** your account and device access are managed centrally, so you do not need separate credentials for the app and website.
+- **One hosted backend:** both clients connect to the same project-operated online service.
 
-**No personal VPS, Python hosting account or self-hosting setup should be required for normal users.**
+> **No self-hosting for regular users.** You do not need to rent a VPS, install Python, configure a server or run your own backend. The project team intends to operate the official service.
 
-> **Development note:** NEXUS REMOTE is actively being developed. Some parts may still be incomplete or change between versions. Check the roadmap before using it for anything important.
+<sub>NEXUS REMOTE is under active development. Features and APIs may change. Review the roadmap and implementation before relying on any capability.</sub>
 
-## ✨ What is included?
+## ◈ Platform at a glance
 
-| Part | What it does |
+| Component | Role |
 |---|---|
-| 📱 Android application | Native app built with Kotlin and Jetpack Compose |
-| ☁️ Hosted Python backend | Operated by the NEXUS REMOTE team; users won't need to deploy it themselves |
-| 🛡️ Bot Guard | Adds a protection layer around incoming requests |
-| ⚡ Limbo | Provides the Python backend framework |
-| 🔗 Device pairing | Designed to connect an account with an approved device |
-| 📡 Live connection | WebSocket-based communication |
-| 🌐 Web dashboard | Optional browser-based interface |
+| **Android application** | Native Kotlin and Jetpack Compose client |
+| **Official website** | Registration, login and optional device dashboard |
+| **Python backend** | Shared API and service layer, hosted by the project team |
+| **Limbo** | Python framework used by the backend |
+| **Bot Guard** | Application-level request protection |
+| **SQLite** | Current database technology documented by the project |
+| **HTTP / WebSocket** | API requests and real-time communication |
+| **WebRTC** | Communication technology used by the project where applicable |
 
-Feature availability can vary while development is in progress. The roadmap describes the intended project direction.
-
-## 🧩 How does it work?
-
-You don't need to understand all the code to understand the idea:
-
-1. Register or sign in through either the Android app or official website.
-2. Use the same account on both platforms; account and device data are stored centrally.
-3. Connect an authorized device through the pairing process.
-4. Manage devices from the Android app or website dashboard.
+### How the platform fits together
 
 ```text
-       ANDROID APP
-    Sign in · Pair · Manage
-             |
-          HTTPS/WSS
-             |
-             v
-      OUR HOSTED BACKEND
-        /          \
-   BOT GUARD       LIMBO
-   Protection    API/server
-        \          /
-          DATABASE
-             |
-      Device connection
+       ANDROID APP                         OFFICIAL WEBSITE
+    Kotlin / Compose                     HTML / CSS / JavaScript
+           |                                      |
+           |              HTTPS / WSS             |
+           +------------------+-------------------+
+                              |
+                              v
+                    PROJECT-HOSTED BACKEND
+                         Python / Limbo
+                              |
+                         Bot Guard
+                              |
+                           Database
+                              |
+                    Authorized device services
 ```
 
-## 🛠️ Built with
+Both clients use the same backend. The website is optional for app users, and the Android app can be used without opening the website.
 
-- **Android:** Kotlin, Jetpack Compose
-- **Backend:** Python
-- **Backend framework:** [Limbo](https://github.com/Quincunx33/limbo)
-- **Request protection:** [Bot Guard](https://github.com/Quincunx33/bot-guard-py)
-- **Database:** SQLite
-- **Communication:** HTTP, WebSocket and WebRTC
-- **Optional web interface:** HTML, CSS and Vanilla JavaScript
+## ◆ Core capabilities
 
-## 🧑‍💻 Developer setup (optional)
+The project is being developed around these areas:
 
-The steps below are for contributors and developers who want to run the backend locally. **Regular users will connect to the official NEXUS REMOTE service from the Android app; they will not need to install Python, run a server or self-host anything.**
+- **Account access** — registration, login, logout and session management.
+- **Device pairing** — connect an account with devices through an approval-based flow.
+- **Device management** — view enrolled devices and their reported status.
+- **Remote commands** — a controlled command system for authorized devices.
+- **File transfer** — user-authorized transfer workflows.
+- **Real-time events** — WebSocket communication for connection and device updates.
+- **Security and audit** — authentication, ownership checks and security event records.
 
-## 🚀 Run the backend locally
+Feature availability depends on implementation status. Planned capabilities are listed in the [roadmap](docs/ROADMAP.md); this list should not be read as a claim that every feature is already production-ready.
 
-### What you'll need
+## ⌘ Python backend API
 
-- Git
-- Python (use a version supported by the project's dependencies)
-- Android Studio, if you also want to build the Android app
+The Android application and official website are designed to use the same versioned Python API. HTTP routes use the `/api/v1/` prefix.
 
-### 1. Get the project
-
-```bash
-git clone https://github.com/Quincunx33/Control-xp.git
-cd Control-xp
-```
-
-### 2. Create a virtual environment
-
-**Linux / macOS**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-**Windows PowerShell**
-```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-### 3. Install the dependencies
-
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-### 4. Start the server
-
-On Linux, macOS, or a shell with Bash available:
-
-```bash
-bash scripts/start_backend.sh
-```
-
-The startup script prepares the database and launches the backend. The default local address is:
-
-```text
-http://127.0.0.1:8000
-```
-
-**First time running it?** That's okay. If something goes wrong, check the error printed in your terminal and open an issue with the relevant log. Remove passwords, tokens and other private information before sharing logs.
-
-## 📱 Build the Android app
-
-1. Install [Android Studio](https://developer.android.com/studio).
-2. Open the cloned project folder.
-3. Wait for Gradle to sync.
-4. Set the backend address for your environment.
-5. Select an emulator or connected Android device and run the app.
-
-You can also try a command-line debug build:
-
-```bash
-gradle :app:assembleDebug
-```
-
-A physical phone must be able to reach the backend over your network. The emulator address `10.0.2.2` is a special address for reaching the host computer from the standard Android emulator.
-
-## 🌐 Do I need to host anything or use the website?
-
-**No. The plan is for us to operate the service.**
-
-- We will launch and maintain our own website and online backend.
-- The Android app and official website will both connect to the same service.
-- Users can register and log in from either the Android app or website.
-- The same account and authorized device list will be available across both clients.
-- Pairing and device management will be available in the app and website dashboard.
-- Users won't need their own VPS, Python hosting account, domain or backend installation.
-
-The service itself still needs an internet connection to communicate with registered devices.
-
-## ☁️ What's coming next?
-
-These are planned improvements, not promises that the features are already available.
-
-### 1. Official NEXUS REMOTE online service
-- Launch our own official website and hosted backend.
-- Deploy and maintain the Python service ourselves.
-- Provide secure account registration, login and device pairing from the Android app.
-- Configure persistent storage, HTTPS, WebSocket support, monitoring, backups and service recovery.
-- Make the official service the default connection target so ordinary users do not need to self-host or configure Python hosting.
-
-### 2. Complete standalone Android experience
-- Registration, login and account management inside the app.
-- Device pairing and management without opening the website.
-- Secure connection to our official hosted backend.
-- Clearer pairing, connection and error screens.
-- A smooth first-time setup for beginners.
-
-### 3. Android app updates
-- Show the installed app version.
-- Notify users when a new release is available.
-- Provide release notes and a safe update flow.
-- Use official distribution or a user-confirmed installation process — never silent installation.
-
-### 4. Advanced remote administration tools
-- Expand the device command system for devices that have been enrolled and authorized.
-- Remote screen viewing through Android's consent-based MediaProjection flow.
-- User-approved file transfer with integrity checks.
-- Device status, battery, storage and connectivity information.
-- Additional remote support actions where Android permits them.
-- Clear on-device indicators, permission controls, audit history and a device-side stop/revoke option.
-
-These tools are intended for legitimate remote support and administration—not stealth access. Android security restrictions and user consent cannot be bypassed.
-
-### 5. Stability and polish
-- Better reconnect and offline handling.
-- More useful device status information.
-- More automated tests and clearer documentation.
-- Improved performance and user experience.
-
-## 🔐 Security matters
-
-This project is intended only for devices you own or are explicitly authorized to manage.
-
-- Device access should require authentication and authorization.
-- Pairing should require approval and use temporary codes.
-- Sensitive Android capabilities must follow Android's permission and consent flows.
-- Screen capture must use Android's visible MediaProjection consent and foreground-service requirements.
-- Never use this project to access someone else's device without permission.
-- Never commit passwords, API keys, tokens or private signing keys.
-
-Bot Guard is an application-level protection layer. It does not replace secure server configuration, a firewall or infrastructure-level DDoS protection.
-
-## 📚 Project guides
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [Android, Website and Backend Data Flow](docs/DATA_FLOW.md)
-- [Deployment](docs/DEPLOYMENT.md)
-- [Roadmap](docs/ROADMAP.md)
-
-Browse the `docs/` directory for additional technical notes.
-
-## 🤝 Want to help?
-
-Contributions, bug reports and practical suggestions are welcome!
-
-If you report a bug, please include:
-- What you were trying to do.
-- What you expected to happen.
-- What actually happened.
-- Steps to reproduce it.
-- Relevant logs (with private information removed).
-
-## 🔗 Related projects
-
-- [Limbo](https://github.com/Quincunx33/limbo) — the Python framework used by the backend.
-- [Bot Guard](https://github.com/Quincunx33/bot-guard-py) — request protection for Python applications.
-
----
-
-<div align="center">
-
-**NEXUS REMOTE**
-
-*One app. Our service. Your authorized devices.*
-
-<sub>Built for transparent, permission-based Android device management.</sub>
-
-</div>
-
-## Python backend API
-
-The Android application and official website use the same Python backend API. All HTTP endpoints below use the `/api/v1/` prefix.
-
-### API endpoint reference
-
-| Category | Endpoints |
+| Category | Endpoint paths |
 |---|---|
-| Authentication | `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/sessions` |
-| Devices | `/devices`, `/devices/register`, `/devices/{id}`, `/devices/{id}/status` |
-| Pairing | `/pairing/create`, `/pairing/verify`, `/pairing/approve`, `/pairing/reject` |
-| Commands | `/commands/registry`, `/devices/{id}/commands`, `/commands/{id}` |
-| File transfer | `/files/create`, `/files/upload/{id}`, `/files/device/{id}` |
-| Audit and security | `/audit`, `/security/events` |
-| Real-time | `/ws` |
-| Health | `/health` |
+| **Authentication** | `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/auth/me`, `/api/v1/auth/sessions` |
+| **Devices** | `/api/v1/devices`, `/api/v1/devices/register`, `/api/v1/devices/{id}`, `/api/v1/devices/{id}/status` |
+| **Pairing** | `/api/v1/pairing/create`, `/api/v1/pairing/verify`, `/api/v1/pairing/approve`, `/api/v1/pairing/reject` |
+| **Commands** | `/api/v1/commands/registry`, `/api/v1/devices/{id}/commands`, `/api/v1/commands/{id}` |
+| **File transfer** | `/api/v1/files/create`, `/api/v1/files/upload/{id}`, `/api/v1/files/device/{id}` |
+| **Audit and security** | `/api/v1/audit`, `/api/v1/security/events` |
+| **Real-time** | `/api/v1/ws` (WebSocket) |
+| **Health** | `/api/v1/health` |
 
-For example, the full login endpoint is `POST /api/v1/auth/login`, and the device-list endpoint is `GET /api/v1/devices`. The WebSocket endpoint uses the same API version prefix: `/api/v1/ws`.
+<sub><strong>API status:</strong> This table records the API surface documented for the project. Confirm each route, HTTP method, request schema and deployment status against the current Python server implementation before using it in a production client. Documentation alone does not guarantee that a route is implemented or enabled.</sub>
 
-> **Implementation status:** This table documents the intended/current API surface for the project. Check the backend route implementation and deployment configuration before relying on an endpoint in a production client; an entry in this README alone does not guarantee that the route is already implemented or enabled.
-
-### Kotlin API usage
-
-A typical login request sends JSON to the backend:
+### Example: sign in
 
 ```http
 POST /api/v1/auth/login
@@ -298,22 +119,186 @@ Content-Type: application/json
 }
 ```
 
-After a successful login, the app uses the returned session token for authenticated requests. For example, to retrieve the signed-in user's devices:
+After a successful login, the backend returns the session information defined by its response schema. The client uses the session token for protected requests.
+
+### Example: retrieve devices
 
 ```http
 GET /api/v1/devices
 Authorization: Bearer SESSION_TOKEN
 ```
 
-The actual response fields and error format should follow the backend's response schema. The Android client should keep session tokens in secure app storage and must not log credentials or tokens.
+The exact response fields and error format must match the server's implemented JSON contract. Never put real passwords or session tokens in documentation, screenshots, source control or logs.
 
-### Client and server integration notes
+### Client integration and security notes
 
-- **WebSocket authentication:** authenticate the connection using the backend's documented WebSocket authentication message or handshake. Do not assume that an HTTP Bearer header is automatically available in every WebSocket client.
-- **JSON contracts:** document request bodies, success responses, validation errors and status codes for every endpoint. Keep Kotlin DTOs aligned with those schemas.
-- **Kotlin API repository:** centralize HTTP calls in an API client/repository layer; use typed DTOs, structured error handling, timeouts and token refresh/session-expiry handling where supported.
-- **Python security audit:** verify authentication and authorization on every protected route, validate input, rate-limit sensitive endpoints, protect sessions, record security-relevant events and avoid leaking secrets in logs.
-- **File upload authorization:** verify the authenticated account owns or is authorized to access the target device and upload session. Enforce file size/type limits, safe storage names and integrity checks.
-- **Device ownership:** every device lookup, status request, command and file operation must enforce account ownership and explicit device authorization on the server—not only in the Android UI.
-- **CORS:** allow only the official website origins that need browser API access. CORS is not authentication and does not replace server-side authorization.
+- **Kotlin API layer:** keep HTTP calls in a shared API client/repository. Use typed DTOs, structured error handling, sensible timeouts and session-expiry handling.
+- **WebSocket authentication:** follow the backend's documented authentication message or handshake. Do not assume every WebSocket client can attach an HTTP Bearer header.
+- **JSON contracts:** define request bodies, success responses, validation errors and status codes consistently, then keep Kotlin DTOs aligned with them.
+- **Server-side authorization:** enforce account ownership and device authorization on every device, command, status and file operation. Hiding a button in the UI is not access control.
+- **File upload safety:** verify ownership of the target device and upload session; validate size and type; use safe storage names and integrity checks.
+- **CORS:** allow only the official website origins that require browser access. CORS is not authentication and does not replace server-side authorization.
+- **Security auditing:** validate inputs, protect sessions, rate-limit sensitive actions, record relevant security events and keep secrets out of logs.
 
+For architecture and message-flow details, see [DATA_FLOW.md](docs/DATA_FLOW.md).
+
+## 🧰 Built with
+
+| Layer | Technologies |
+|---|---|
+| Android | Kotlin, Jetpack Compose |
+| Backend | Python, [Limbo](https://github.com/Quincunx33/limbo) |
+| Request protection | [Bot Guard](https://github.com/Quincunx33/bot-guard-py) |
+| Database | SQLite |
+| Web client | HTML, CSS, Vanilla JavaScript |
+| Communication | HTTP, WebSocket, WebRTC |
+
+## 🚀 Using the service
+
+The intended regular-user experience is simple:
+
+1. Install and open the Android app, or visit the official NEXUS REMOTE website.
+2. Register an account or sign in.
+3. Use the same account on either platform.
+4. Pair a device using the approval flow.
+5. Manage authorized devices from the Android app or the website dashboard.
+
+**You do not need to host anything yourself.** The project team intends to provide and maintain the official website and Python backend. An internet connection is required for clients and enrolled devices to communicate with the hosted service.
+
+## 🧑‍💻 Developer setup
+
+This section is for contributors who want to run the project locally. It is **not** required for normal users.
+
+### Prerequisites
+
+- Git
+- Python version supported by the project's dependencies
+- Android Studio (only if building the Android application)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Quincunx33/Control-xp.git
+cd Control-xp
+```
+
+### 2. Create and activate a virtual environment
+
+**Linux / macOS**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+**Windows PowerShell**
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### 4. Start the local backend
+
+On Linux, macOS or a shell with Bash available:
+
+```bash
+bash scripts/start_backend.sh
+```
+
+The startup script prepares the database and starts the backend. The documented default local address is:
+
+```text
+http://127.0.0.1:8000
+```
+
+If startup fails, review the terminal output and include relevant, sanitized logs when opening an issue. Remove passwords, tokens and other private information before sharing logs.
+
+## 📱 Build the Android app
+
+1. Install [Android Studio](https://developer.android.com/studio).
+2. Open the cloned repository.
+3. Allow Gradle to sync.
+4. Configure the backend address for your development environment.
+5. Select an emulator or connected Android device and run the app.
+
+A command-line debug build can also be attempted with:
+
+```bash
+gradle :app:assembleDebug
+```
+
+The Android device must be able to reach the backend. In the standard Android emulator, `10.0.2.2` is a special address that points to the host computer.
+
+## 🗺️ Roadmap
+
+NEXUS REMOTE is actively evolving. The roadmap tracks the work planned for the official hosted service, standalone Android experience, app updates, remote administration capabilities and stability improvements.
+
+- **Official hosted service:** project-operated website and backend, secure deployment, monitoring, backups and recovery.
+- **Standalone Android experience:** complete in-app registration, login, pairing and device management.
+- **App updates:** version information, release notifications, release notes and a safe user-confirmed update flow.
+- **Remote administration:** consent-based screen viewing, approved file transfer, device telemetry and supported remote assistance actions.
+- **Reliability:** reconnect handling, offline states, automated tests and usability improvements.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for phases and current progress. Roadmap items are plans until their implementation is completed and verified.
+
+## 🔐 Security and responsible use
+
+NEXUS REMOTE is intended only for devices you own or are explicitly authorized to manage.
+
+- Require authentication and server-side authorization for protected actions.
+- Use an approval-based pairing process and short-lived pairing codes.
+- Respect Android permissions and consent requirements for sensitive capabilities.
+- Screen capture must use Android's visible MediaProjection consent flow and applicable foreground-service requirements.
+- Provide clear device-side indicators and a way to stop or revoke access.
+- Never use the project to access another person's device without permission.
+- Never commit passwords, API keys, access tokens or private signing keys.
+
+Bot Guard provides an application-level protection layer. It does not replace secure infrastructure configuration, firewall rules or infrastructure-level DDoS protection.
+
+## 📖 Documentation
+
+| Guide | Description |
+|---|---|
+| [Architecture](docs/ARCHITECTURE.md) | Main components and how they fit together |
+| [Data flow](docs/DATA_FLOW.md) | Android, website and backend communication |
+| [Deployment](docs/DEPLOYMENT.md) | Backend deployment notes |
+| [Roadmap](docs/ROADMAP.md) | Planned phases and project progress |
+
+## 🤝 Contributing
+
+Contributions, bug reports and practical suggestions are welcome.
+
+When reporting a bug, include:
+
+- What you were trying to do.
+- What you expected to happen.
+- What actually happened.
+- Steps to reproduce the issue.
+- Relevant logs with credentials, tokens and personal data removed.
+
+Please keep changes focused and explain how you tested them.
+
+## 🔗 Related projects
+
+- [Limbo](https://github.com/Quincunx33/limbo) — the Python framework used by the backend.
+- [Bot Guard](https://github.com/Quincunx33/bot-guard-py) — request protection for Python applications.
+
+---
+
+<div align="center">
+
+### ✦ NEXUS REMOTE
+
+**One app. One website. One shared service.**
+
+<sub>Built for transparent, permission-based Android device management.</sub>
+
+</div>
