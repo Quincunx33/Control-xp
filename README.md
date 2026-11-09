@@ -1,6 +1,6 @@
 <!--
   NEXUS REMOTE
-  A self-hosted Android device management project.
+  A cloud-hosted Android remote management service.
 -->
 
 <div align="center">
@@ -59,7 +59,7 @@ You don't need to understand all the code to understand the idea:
 1. **Open the Android app** and sign in.
 2. **Connect an authorized device** through the pairing process.
 3. **The Python server** checks the account and handles communication.
-4. **Manage your connected device** from the app. The web dashboard can be used as an additional interface.
+4. **Manage your connected device** from the app through the official online service. The website dashboard is optional.
 
 ```text
        ANDROID APP
@@ -68,7 +68,7 @@ You don't need to understand all the code to understand the idea:
           HTTPS/WSS
              |
              v
-       PYTHON BACKEND
+      OUR HOSTED BACKEND
         /          \
    BOT GUARD       LIMBO
    Protection    API/server
