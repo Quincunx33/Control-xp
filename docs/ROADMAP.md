@@ -69,6 +69,7 @@ The next major stage is not a self-hosting product for ordinary users. The proje
 
 ## Phase 10 — Official Website & Hosted Backend [PLANNED]
 - [ ] Launch the official NEXUS REMOTE website and service domain.
+- [ ] Provide website registration and login as well as in-app registration/login, backed by one shared account system.
 - [ ] Deploy the Python backend on infrastructure operated by the project team.
 - [ ] Configure production HTTPS, secure secrets, persistent database storage, backups and monitoring.
 - [ ] Operate authenticated WebSocket connections for online devices.
@@ -81,7 +82,8 @@ The next major stage is not a self-hosting product for ordinary users. The proje
 - [ ] Login, logout, session renewal and account recovery flows.
 - [ ] Device pairing and device management entirely from the Android app.
 - [ ] Connect to the official hosted backend without asking users to configure a server.
-- [ ] Keep the website/dashboard optional for browser-based administration.
+- [ ] Keep the website/dashboard available as a full alternative client; app users are not required to use it.
+- [ ] Synchronize account identity, device registry, permissions and audit history through the shared backend.
 
 ## Phase 12 — Advanced Remote Administration Toolset [PLANNED]
 Build a comprehensive remote-support and device-administration system for devices that are owned by, or explicitly enrolled with permission from, the account holder.
@@ -104,3 +106,19 @@ Build a comprehensive remote-support and device-administration system for device
 - [ ] Signed releases, published release notes and compatibility information.
 - [ ] Safe update through an official distribution channel or user-confirmed installation.
 
+
+
+## Phase 14 — Kotlin, Web UI and HTML Integration [PLANNED]
+
+- [ ] Define a versioned JSON API contract shared by Kotlin and website JavaScript.
+- [ ] Implement/verify Kotlin API repository, typed request/response models, coroutine networking, structured errors and secure session handling.
+- [ ] Connect Compose ViewModels to repository state through StateFlow; render loading, success, empty, offline and error states.
+- [ ] Ensure website HTML/CSS/Vanilla JavaScript uses the same backend endpoints and authorization rules.
+- [ ] Update HTML DOM from validated API responses; never treat untrusted data as executable HTML or JavaScript.
+- [ ] Add authenticated WebSocket event contracts for presence, telemetry, command progress/results and session events.
+- [ ] Synchronize UI state across Android and website through backend events and reconnect recovery.
+- [ ] If an embedded web editor is required, implement an optional origin-restricted WebView bridge with a narrow JSON message allowlist.
+- [ ] If users can edit HTML templates, build a dedicated content API with validation, preview, version history and rollback.
+- [ ] Add integration tests for registration on either client, cross-client login, shared device visibility, permission checks and live updates.
+
+**Data-flow rule:** Kotlin and browser JavaScript communicate through the hosted backend by default. A WebView bridge is only for an explicitly embedded web surface.
