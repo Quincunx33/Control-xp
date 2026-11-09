@@ -32,7 +32,7 @@ Think of it as a service we operate for you:
 
 - 📱 **Android app** — register, sign in, pair devices and manage them directly from your phone.
 - ☁️ **Our online service** — we host and maintain the Python backend on our own infrastructure.
-- 🌐 **Our website** — provides the public entry point and optional web dashboard, but you won't need to open it for everyday app use.
+- 🌐 **Our website** — supports its own registration and login, plus an optional browser dashboard. The same account works on the website and Android app.
 
 **No personal VPS, Python hosting account or self-hosting setup should be required for normal users.**
 
@@ -56,10 +56,10 @@ Feature availability can vary while development is in progress. The roadmap desc
 
 You don't need to understand all the code to understand the idea:
 
-1. **Open the Android app** and sign in.
-2. **Connect an authorized device** through the pairing process.
-3. **The Python server** checks the account and handles communication.
-4. **Manage your connected device** from the app through the official online service. The website dashboard is optional.
+1. Register or sign in through either the Android app or official website.
+2. Use the same account on both platforms; account and device data are stored centrally.
+3. Connect an authorized device through the pairing process.
+4. Manage devices from the Android app or website dashboard.
 
 ```text
        ANDROID APP
@@ -165,9 +165,10 @@ A physical phone must be able to reach the backend over your network. The emulat
 **No. The plan is for us to operate the service.**
 
 - We will launch and maintain our own website and online backend.
-- The Android app will connect directly to that service.
-- Registration, login, pairing and device management will happen inside the app.
-- The website/dashboard will be optional for users who prefer a browser.
+- The Android app and official website will both connect to the same service.
+- Users can register and log in from either the Android app or website.
+- The same account and authorized device list will be available across both clients.
+- Pairing and device management will be available in the app and website dashboard.
 - Users won't need their own VPS, Python hosting account, domain or backend installation.
 
 The service itself still needs an internet connection to communicate with registered devices.
@@ -228,6 +229,7 @@ Bot Guard is an application-level protection layer. It does not replace secure s
 ## 📚 Project guides
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Android, Website and Backend Data Flow](docs/DATA_FLOW.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
 
@@ -260,3 +262,16 @@ If you report a bug, please include:
 <sub>Built for transparent, permission-based Android device management.</sub>
 
 </div>
+
+
+## How Kotlin, the website and HTML exchange data
+
+The Android app and website are separate clients. Kotlin does not need to rewrite the website HTML to update device information.
+
+- **Kotlin Android client:** sends authenticated HTTPS requests with JSON and receives JSON responses.
+- **Website client:** HTML defines page structure, CSS styles it, and Vanilla JavaScript updates the page using backend data.
+- **Live updates:** authenticated WebSocket messages carry device presence, telemetry, command status and other events.
+- **Single source of truth:** the backend validates requests, checks permissions, stores approved changes and broadcasts updates.
+- **Optional WebView:** if a future Android screen embeds a web page, a narrow JavaScript bridge can pass validated JSON messages between Kotlin and JavaScript. The current app uses native Compose, so this bridge is not required.
+
+See [DATA_FLOW.md](docs/DATA_FLOW.md) for request/response examples, event flow and security rules.
