@@ -17,3 +17,6 @@ local.properties
 .env
 debug.keystore
 .venv/
+__pycache__/
+*.py[cod]
+backend/data/uploads/
