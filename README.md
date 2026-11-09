@@ -9,12 +9,12 @@
 
 ### Your Android devices. One secure place.
 
-**A self-hosted device management project with a native Android app and a Python backend.**
+**A cloud-hosted Android remote management platform, powered by our own online service and Python backend.**
 
 <p>
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android">
   <img src="https://img.shields.io/badge/Backend-Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/Framework-Limbo-6655CC?style=for-the-badge" alt="Limbo">
+  <img src="https://img.shields.io/badge/Service-Cloud%20Hosted-4C8BF5?style=for-the-badge" alt="Cloud hosted">
   <img src="https://img.shields.io/badge/Status-Active%20Development-orange?style=for-the-badge" alt="Active development">
 </p>
 
@@ -28,12 +28,13 @@
 
 NEXUS REMOTE is a project for connecting and managing Android devices that **you own or have permission to manage**.
 
-Think of it as two parts working together:
+Think of it as a service we operate for you:
 
-- 📱 **Android app** — the place where you sign in, connect a device and manage it.
-- 🖥️ **Python backend** — the server that handles accounts, device connections and communication.
+- 📱 **Android app** — register, sign in, pair devices and manage them directly from your phone.
+- ☁️ **Our online service** — we host and maintain the Python backend on our own infrastructure.
+- 🌐 **Our website** — provides the public entry point and optional web dashboard, but you won't need to open it for everyday app use.
 
-The goal is simple: you should be able to use the Android app without having to open a website. A web dashboard can remain available as an optional extra.
+**No personal VPS, Python hosting account or self-hosting setup should be required for normal users.**
 
 > **Development note:** NEXUS REMOTE is actively being developed. Some parts may still be incomplete or change between versions. Check the roadmap before using it for anything important.
 
@@ -42,7 +43,7 @@ The goal is simple: you should be able to use the Android app without having to 
 | Part | What it does |
 |---|---|
 | 📱 Android application | Native app built with Kotlin and Jetpack Compose |
-| 🐍 Python backend | Runs the server and handles application requests |
+| ☁️ Hosted Python backend | Operated by the NEXUS REMOTE team; users won't need to deploy it themselves |
 | 🛡️ Bot Guard | Adds a protection layer around incoming requests |
 | ⚡ Limbo | Provides the Python backend framework |
 | 🔗 Device pairing | Designed to connect an account with an approved device |
@@ -86,6 +87,10 @@ You don't need to understand all the code to understand the idea:
 - **Database:** SQLite
 - **Communication:** HTTP, WebSocket and WebRTC
 - **Optional web interface:** HTML, CSS and Vanilla JavaScript
+
+## 🧑‍💻 Developer setup (optional)
+
+The steps below are for contributors and developers who want to run the backend locally. **Regular users will connect to the official NEXUS REMOTE service from the Android app; they will not need to install Python, run a server or self-host anything.**
 
 ## 🚀 Run the backend locally
 
@@ -155,34 +160,35 @@ gradle :app:assembleDebug
 
 A physical phone must be able to reach the backend over your network. The emulator address `10.0.2.2` is a special address for reaching the host computer from the standard Android emulator.
 
-## 🌐 Do I need the website?
+## 🌐 Do I need to host anything or use the website?
 
-**The long-term plan is: no.**
+**No. The plan is for us to operate the service.**
 
-NEXUS REMOTE is moving toward a standalone Android experience:
+- We will launch and maintain our own website and online backend.
+- The Android app will connect directly to that service.
+- Registration, login, pairing and device management will happen inside the app.
+- The website/dashboard will be optional for users who prefer a browser.
+- Users won't need their own VPS, Python hosting account, domain or backend installation.
 
-- Create an account from the Android app.
-- Sign in and manage your account in the app.
-- Pair and manage devices without opening a browser.
-- Keep the web dashboard as an optional alternative.
-
-One important distinction: **not needing the website does not mean not needing a server.** Remote device management still needs a reachable backend and an internet or network connection.
+The service itself still needs an internet connection to communicate with registered devices.
 
 ## ☁️ What's coming next?
 
 These are planned improvements, not promises that the features are already available.
 
-### 1. Python-hosting-ready deployment
-- Make setup easier on Python application hosting platforms.
-- Provide a clear production start command and hosting configuration.
-- Document environment variables, storage, health checks and WebSocket requirements.
-- Keep self-hosting on a VPS as an option.
+### 1. Official NEXUS REMOTE online service
+- Launch our own official website and hosted backend.
+- Deploy and maintain the Python service ourselves.
+- Provide secure account registration, login and device pairing from the Android app.
+- Configure persistent storage, HTTPS, WebSocket support, monitoring, backups and service recovery.
+- Make the official service the default connection target so ordinary users do not need to self-host or configure Python hosting.
 
-### 2. A complete standalone Android app
-- Registration and login directly inside the app.
-- Account and device management without the web dashboard.
+### 2. Complete standalone Android experience
+- Registration, login and account management inside the app.
+- Device pairing and management without opening the website.
+- Secure connection to our official hosted backend.
 - Clearer pairing, connection and error screens.
-- A smoother first-time setup for beginners.
+- A smooth first-time setup for beginners.
 
 ### 3. Android app updates
 - Show the installed app version.
@@ -190,7 +196,17 @@ These are planned improvements, not promises that the features are already avail
 - Provide release notes and a safe update flow.
 - Use official distribution or a user-confirmed installation process — never silent installation.
 
-### 4. Stability and polish
+### 4. Advanced remote administration tools
+- Expand the device command system for devices that have been enrolled and authorized.
+- Remote screen viewing through Android's consent-based MediaProjection flow.
+- User-approved file transfer with integrity checks.
+- Device status, battery, storage and connectivity information.
+- Additional remote support actions where Android permits them.
+- Clear on-device indicators, permission controls, audit history and a device-side stop/revoke option.
+
+These tools are intended for legitimate remote support and administration—not stealth access. Android security restrictions and user consent cannot be bypassed.
+
+### 5. Stability and polish
 - Better reconnect and offline handling.
 - More useful device status information.
 - More automated tests and clearer documentation.
@@ -239,7 +255,7 @@ If you report a bug, please include:
 
 **NEXUS REMOTE**
 
-*One app. Your devices. Your server.*
+*One app. Our service. Your authorized devices.*
 
 <sub>Built for transparent, permission-based Android device management.</sub>
 
