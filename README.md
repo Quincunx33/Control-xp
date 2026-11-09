@@ -1,125 +1,269 @@
 # NEXUS REMOTE
 
-> **Secure Android Remote Device Management Platform**  
-> Complete Production Specification & Implementation: Native Android Agent, Zero-Framework Web Dashboard, and Self-Hostable Limbo Backend with Bot Guard Integration.
+<p align="center">
+  <strong>Secure Android Device Management — Without Depending on a Browser Dashboard</strong>
+</p>
+
+<p align="center">
+  <em>Native Android · Python Backend · Limbo · Bot Guard · Real-Time Communication</em>
+</p>
+
+NEXUS REMOTE is a self-hostable platform for securely connecting and managing Android devices that you own or are explicitly authorized to manage. It combines a native Android agent with a Python backend, device pairing, live status updates, and permission-aware remote features.
+
+The project is being developed around one important goal: **the Android app should be usable on its own. A web dashboard may be available as an optional management interface, but it should not be required for everyday registration, login, pairing, or device management.**
+
+> **Project status:** Active development. Check the roadmap and release notes before relying on any feature in production. Planned features are identified separately from currently implemented functionality.
 
 ---
 
-## 🌟 Key Highlights
+## Highlights
 
-- 📱 **Native Android Agent**: Built with modern Kotlin, Jetpack Compose, and MVVM architecture. Captures real hardware battery, temperature, storage, and network telemetry without mock data.
-- 💻 **Zero-Framework Web Dashboard**: Pure Vanilla HTML5, modern CSS, and ES6 JavaScript. No React, Vue, or heavy node dependencies required.
-- 🛡️ **Limbo Backend with Bot Guard Security**: Python backend using the separately maintained Limbo and `bot-guard-py` packages, with pre-auth request inspection, IP rate limiting, and trusted proxy verification.
-- 🔒 **Secure Device Pairing**: Short-lived 6-character pairing codes with mandatory explicit on-device user confirmation before access is granted.
-- 📡 **Real-Time WebSocket & WebRTC**: Authenticated WebSocket gateway for live presence, telemetry streaming, strict command delivery, and WebRTC screen sharing signaling.
-- 🎥 **MediaProjection Screen Sharing**: Android system consent workflow with persistent foreground service notification (`ScreenCaptureService`) and one-tap stop controls.
-- 📦 **Pinned Python Dependencies**: Limbo and Bot Guard are installed from PyPI as `limbo33` and `bot-guard-py`, with versions pinned in `requirements.txt`.
+- **Native Android app** — Kotlin and Jetpack Compose.
+- **Python-hosted backend** — self-host the server on a Python-capable hosting service or your own VPS.
+- **Limbo backend** — uses the Limbo Python framework rather than introducing a separate web framework.
+- **Bot Guard protection** — request inspection and pre-authentication protection before login routes.
+- **Secure device pairing** — short-lived pairing codes and explicit approval on the Android device.
+- **Live communication** — authenticated WebSocket connections for presence, status, and command events.
+- **Permission-aware features** — Android system permissions and consent flows are respected.
+- **Optional web dashboard** — a browser interface can complement the Android app; it is not intended to be a mandatory dependency.
 
----
+## Architecture
 
-## 🏗️ Architecture
-
-```
-                  NEXUS REMOTE
-                       |
-          +------------+------------+
-          |                         |
-          v                         v
-     WEB DASHBOARD             ANDROID AGENT
-   HTML/CSS/Vanilla JS              Kotlin
-          |                         |
-          +------------+------------+
-                       |
-                     HTTPS
-                       |
-                       v
-                  CLOUDFLARE
-                       |
-                       v
-                  BOT GUARD
-               Pre-auth Security
-                       |
-                       v
-                  LIMBO SERVER
-                       |
-          +------------+-------------+
-          |            |             |
-          v            v             v
-       REST API     WebSocket     WebRTC
-          |            |             |
-          +------------+-------------+
-                       |
-                       v
-                    DATABASE (SQLite + WAL)
-                       |
-          +------------+-------------+
-          |            |             |
-          v            v             v
-       Accounts     Devices       Sessions
-          |
-          v
-      Audit Logs
+```text
+             ANDROID APP
+        Login · Register · Pairing
+        Device Status · Management
+                  |
+               HTTPS/WSS
+                  |
+                  v
+          PYTHON-HOSTED SERVER
+                  |
+          +-------+--------+
+          |                |
+          v                v
+       BOT GUARD          LIMBO
+   Pre-auth security   Backend/API
+          |                |
+          +-------+--------+
+                  |
+                  v
+              DATABASE
+        Accounts · Devices · Sessions
+                  |
+          +-------+--------+
+          |                |
+          v                v
+      Android Agent    Optional Web UI
 ```
 
----
+The Android application communicates directly with the backend. The optional web interface is a separate client of the same backend APIs.
 
-## 🚀 Quick Start
+## Technology
 
-### 1. Install Backend Dependencies & Launch
+| Component | Technology |
+|---|---|
+| Android application | Kotlin, Jetpack Compose |
+| Backend runtime | Python |
+| Backend framework | [Limbo](https://github.com/Quincunx33/limbo) |
+| Request protection | [Bot Guard](https://github.com/Quincunx33/bot-guard-py) |
+| Database | SQLite |
+| API | HTTP/REST |
+| Real-time events | WebSocket |
+| Screen-sharing transport | WebRTC |
+| Optional dashboard | HTML, CSS, Vanilla JavaScript |
+
+## Getting Started
+
+### Requirements
+
+- Python 3.10 or newer (use the version required by the pinned dependencies).
+- Git.
+- Android Studio for building the Android application.
+- A device or emulator running a supported Android version.
+
+### Backend setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Quincunx33/Control-xp.git
+cd Control-xp
+```
+
+Create and activate a virtual environment:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install -r requirements.txt
-# Run database migrations and start server on port 8000
+```
+
+On Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+Install the pinned Python dependencies:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Start the backend:
+
+```bash
 bash scripts/start_backend.sh
 ```
-Access the management console at: `http://localhost:8000`
 
-### 2. Run Android Agent
-Open the project in Android Studio or compile via Gradle:
+The startup script applies database migrations and starts the Limbo server. Its default local address is:
+
+```text
+http://127.0.0.1:8000
+```
+
+For production, configure a domain, HTTPS, trusted reverse proxies, and the environment variables documented in the deployment guide. Do not expose an unencrypted development server directly to the public internet.
+
+### Android app
+
+1. Open the repository in Android Studio.
+2. Allow Gradle to sync.
+3. Configure the backend base URL for your environment.
+4. Build and install the debug application.
+
+You can also build from the command line:
+
 ```bash
 gradle :app:assembleDebug
 ```
-Launch on your Android device or emulator. The default server address points to `http://10.0.2.2:8000` for Android emulators.
 
-### 3. Pair a Device
-1. Open the Android Agent on the device and tap **Pair Device** to display the 6-character code (e.g. `7K9B2X`).
-2. Log into the Web Dashboard, click **+ Pair Device**, and enter the code.
-3. The Android screen will show an authorization prompt: tap **Approve & Link**.
-4. The device is now active in your fleet with live telemetry and remote commands.
+The emulator's `10.0.2.2` address is only suitable for reaching a backend running on the host machine. A physical Android device needs a reachable server address.
 
----
+## Device Pairing
 
-## 🧪 Testing
+The intended pairing flow is:
 
-### Backend Test Suite (10/10 Passing)
+1. Sign in to the Android app.
+2. Start the device-pairing flow to request a temporary code.
+3. Enter the code in an authorized client.
+4. Confirm the pairing request on the Android device.
+5. The backend links the device to the account after successful verification.
+
+Pairing codes must be short-lived and single-use. Device access must remain revocable by the account owner.
+
+## Security and Privacy
+
+NEXUS REMOTE is designed for devices that you own or have explicit permission to manage.
+
+- Bot Guard should inspect requests before login and other authentication handlers.
+- Authentication and device authorization are separate checks.
+- Every device command must be authorized by the backend.
+- WebSocket connections must be authenticated independently.
+- Screen sharing must use Android's MediaProjection consent flow and a visible foreground notification.
+- Camera, microphone, accessibility, and other sensitive capabilities must never be activated covertly.
+- Do not store passwords, access tokens, or private signing keys in source control.
+- Configure trusted proxies explicitly; do not trust arbitrary forwarded-IP headers.
+
+Bot Guard provides application-layer protection. It does not replace a firewall, Cloudflare WAF, or infrastructure-level DDoS protection.
+
+## Hosting
+
+The backend is intended to run as a persistent Python application. A suitable Python hosting provider must support:
+
+- A long-running Python process.
+- Persistent writable storage for SQLite, or an external database.
+- WebSocket connections.
+- Configurable environment variables.
+- HTTPS or a trusted reverse proxy.
+
+A serverless platform that terminates processes between requests or does not support persistent WebSockets is not automatically compatible. Review the hosting provider's limits before deployment.
+
+See [Deployment Guide](docs/DEPLOYMENT.md) for the current VPS setup and deployment configuration.
+
+## Roadmap — Upcoming Work
+
+The following items describe the next development direction. They are planned work, not claims that the features are already released.
+
+### 1. Python-hosting-ready deployment
+
+- Make deployment straightforward on Python application hosting platforms.
+- Add a clear production entry point and hosting configuration.
+- Document environment variables, persistent storage, WebSocket support, and health checks.
+- Keep VPS deployment supported.
+- Provide a deployment profile that does not require a separately hosted static website.
+
+### 2. Standalone Android experience — no web dashboard required
+
+- Add registration directly inside the Android app.
+- Add login, logout, and account recovery flows in the app.
+- Allow users to register, sign in, pair, and manage their devices from Android.
+- Make the web dashboard optional rather than a required step.
+- Keep the same backend APIs and security rules for every client.
+
+**Clarification:** “Without the web dashboard” means the user interface can be used entirely from the Android app. A hosted backend is still required for account authentication and remote communication; this does not mean remote access works without a network or server.
+
+### 3. Android app updates
+
+- Improve the app's update and release workflow.
+- Show the installed version and available release information.
+- Notify users when a newer version is available.
+- Provide a safe update path through an official distribution channel or a user-confirmed APK installation flow.
+- Publish release notes and compatibility information.
+- Never silently install updates or bypass Android's package-installation protections.
+
+### 4. Reliability and usability
+
+- Improve reconnect behavior and offline-state handling.
+- Improve pairing feedback and error messages.
+- Improve device status refresh and background-work behavior within Android limits.
+- Expand automated tests across the Android app and backend.
+- Improve setup and troubleshooting documentation.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [API Reference](docs/API.md)
+- [Database Design](docs/DATABASE.md)
+- [Security](docs/SECURITY.md)
+- [Android Permissions](docs/ANDROID_PERMISSIONS.md)
+- [WebSocket Protocol](docs/WEBSOCKET.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Development Guide](docs/DEVELOPMENT.md)
+- [Roadmap](docs/ROADMAP.md)
+
+## Development and Testing
+
+Install the backend dependencies before running backend tests:
+
 ```bash
-source .venv/bin/activate
-python3 backend/tests/test_backend.py
+python -m pip install -r requirements.txt
+python backend/tests/test_backend.py
 ```
-Validates password hashing, token expiration, user registration/login, device registration, pairing state transitions, command execution, Bot Guard scoring, and trusted proxy extraction.
 
-### Android Unit & Robolectric Tests (Passing)
+Run Android unit tests:
+
 ```bash
 gradle :app:testDebugUnitTest
 ```
-Validates resource strings, SessionManager persistence, and CommandExecutor execution.
+
+Test results depend on the local environment and installed toolchains. Run the commands yourself and check their output before treating a build or test suite as passing.
+
+## Contributing
+
+Bug reports, improvements, and feature suggestions are welcome. Please include:
+
+- What you expected to happen.
+- What actually happened.
+- Steps to reproduce the issue.
+- Relevant logs with credentials and personal data removed.
+- Device model and Android version, when reporting Android issues.
+
+## License
+
+See the repository's [LICENSE](LICENSE) file for licensing terms.
 
 ---
 
-## 📚 Complete Documentation
-
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System architecture and topology
-- [`docs/API.md`](docs/API.md) — Versioned REST API reference (v1)
-- [`docs/DATABASE.md`](docs/DATABASE.md) — SQLite schema and migration system
-- [`docs/SECURITY.md`](docs/SECURITY.md) — Bot Guard integration, rate limiting, and password hashing
-- [`docs/ANDROID_PERMISSIONS.md`](docs/ANDROID_PERMISSIONS.md) — Android permission explanations and privacy guarantees
-- [`docs/WEBSOCKET.md`](docs/WEBSOCKET.md) — Real-time WebSocket and WebRTC signaling protocols
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Linux VPS, systemd, and Nginx deployment guide
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — Local development workflow and commands
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — Master implementation audit and milestones
-
----
-
-## 📜 License
-MIT License. Built for secure Android device management.
+**NEXUS REMOTE** — manage your authorized Android devices from the app, with a self-hosted Python backend.
