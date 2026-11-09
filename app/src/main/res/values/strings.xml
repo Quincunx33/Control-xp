@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Nexus Remote</string>
+    <string name="app_name">Control XP</string>
     <string name="accessibility_service_description">Enables authorized remote touch input, gesture navigation, and administrative controls from your secure NEXUS REMOTE management console.</string>
 </resources>
