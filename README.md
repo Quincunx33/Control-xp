@@ -262,3 +262,58 @@ If you report a bug, please include:
 <sub>Built for transparent, permission-based Android device management.</sub>
 
 </div>
+
+## Python backend API
+
+The Android application and official website use the same Python backend API. All HTTP endpoints below use the `/api/v1/` prefix.
+
+### API endpoint reference
+
+| Category | Endpoints |
+|---|---|
+| Authentication | `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/sessions` |
+| Devices | `/devices`, `/devices/register`, `/devices/{id}`, `/devices/{id}/status` |
+| Pairing | `/pairing/create`, `/pairing/verify`, `/pairing/approve`, `/pairing/reject` |
+| Commands | `/commands/registry`, `/devices/{id}/commands`, `/commands/{id}` |
+| File transfer | `/files/create`, `/files/upload/{id}`, `/files/device/{id}` |
+| Audit and security | `/audit`, `/security/events` |
+| Real-time | `/ws` |
+| Health | `/health` |
+
+For example, the full login endpoint is `POST /api/v1/auth/login`, and the device-list endpoint is `GET /api/v1/devices`. The WebSocket endpoint uses the same API version prefix: `/api/v1/ws`.
+
+> **Implementation status:** This table documents the intended/current API surface for the project. Check the backend route implementation and deployment configuration before relying on an endpoint in a production client; an entry in this README alone does not guarantee that the route is already implemented or enabled.
+
+### Kotlin API usage
+
+A typical login request sends JSON to the backend:
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+After a successful login, the app uses the returned session token for authenticated requests. For example, to retrieve the signed-in user's devices:
+
+```http
+GET /api/v1/devices
+Authorization: Bearer SESSION_TOKEN
+```
+
+The actual response fields and error format should follow the backend's response schema. The Android client should keep session tokens in secure app storage and must not log credentials or tokens.
+
+### Client and server integration notes
+
+- **WebSocket authentication:** authenticate the connection using the backend's documented WebSocket authentication message or handshake. Do not assume that an HTTP Bearer header is automatically available in every WebSocket client.
+- **JSON contracts:** document request bodies, success responses, validation errors and status codes for every endpoint. Keep Kotlin DTOs aligned with those schemas.
+- **Kotlin API repository:** centralize HTTP calls in an API client/repository layer; use typed DTOs, structured error handling, timeouts and token refresh/session-expiry handling where supported.
+- **Python security audit:** verify authentication and authorization on every protected route, validate input, rate-limit sensitive endpoints, protect sessions, record security-relevant events and avoid leaking secrets in logs.
+- **File upload authorization:** verify the authenticated account owns or is authorized to access the target device and upload session. Enforce file size/type limits, safe storage names and integrity checks.
+- **Device ownership:** every device lookup, status request, command and file operation must enforce account ownership and explicit device authorization on the server—not only in the Android UI.
+- **CORS:** allow only the official website origins that need browser API access. CORS is not authentication and does not replace server-side authorization.
+
