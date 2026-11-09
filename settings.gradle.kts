@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Nexus Remote"
+rootProject.name = "Control-XP"
 
 include(":app")

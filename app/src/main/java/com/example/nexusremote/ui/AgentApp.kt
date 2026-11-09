@@ -66,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -229,7 +230,7 @@ fun AgentApp(viewModel: AgentViewModel) {
           Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
               modifier = Modifier
-                .size(10.dp)
+                .size(12.dp)
                 .clip(CircleShape)
                 .background(
                   when (connState) {
@@ -239,16 +240,19 @@ fun AgentApp(viewModel: AgentViewModel) {
                   }
                 )
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Column {
-              Text("NEXUS REMOTE", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text("Agent Status: $connState", fontSize = 11.sp, color = Color.Gray)
+              Text("Control-XP", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
+              Text("Node Link: $connState", fontSize = 11.sp, color = Color.Gray)
             }
           }
         },
         actions = {
-          IconButton(onClick = { viewModel.refreshTelemetry() }) {
-            Icon(Icons.Default.Refresh, contentDescription = "Refresh Telemetry")
+          IconButton(
+            onClick = { viewModel.refreshTelemetry() },
+            modifier = Modifier.padding(end = 8.dp)
+          ) {
+            Icon(Icons.Default.Refresh, contentDescription = "Refresh Telemetry", tint = NexusCyan)
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -262,7 +266,7 @@ fun AgentApp(viewModel: AgentViewModel) {
           selected = selectedTab == 0,
           onClick = { selectedTab = 0 },
           icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
-          label = { Text("Dashboard") },
+          label = { Text("Overview") },
           modifier = Modifier.testTag("tab_dashboard")
         )
         NavigationBarItem(
@@ -272,14 +276,14 @@ fun AgentApp(viewModel: AgentViewModel) {
             viewModel.refreshPermissions()
           },
           icon = { Icon(Icons.Default.Security, contentDescription = "Permissions") },
-          label = { Text("Permissions") },
+          label = { Text("Shields") },
           modifier = Modifier.testTag("tab_permissions")
         )
         NavigationBarItem(
           selected = selectedTab == 2,
           onClick = { selectedTab = 2 },
           icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-          label = { Text("Settings") },
+          label = { Text("Config") },
           modifier = Modifier.testTag("tab_settings")
         )
       }
@@ -288,6 +292,14 @@ fun AgentApp(viewModel: AgentViewModel) {
     Box(
       modifier = Modifier
         .fillMaxSize()
+        .background(
+          Brush.verticalGradient(
+            colors = listOf(
+              Color(0xFF04060B),
+              Color(0xFF0A0F1D)
+            )
+          )
+        )
         .padding(innerPadding)
     ) {
       when (selectedTab) {
@@ -323,6 +335,9 @@ fun AgentApp(viewModel: AgentViewModel) {
           },
           onDisableBatteryRestrictions = {
             viewModel.permissionManager.requestIgnoreBatteryOptimizations()
+          },
+          onGrantAllFilesAccess = {
+            viewModel.permissionManager.requestManageAllFilesAccess()
           }
         )
         2 -> SettingsTab(
@@ -358,23 +373,24 @@ fun DashboardTab(
     if (ungrantedRuntime.isNotEmpty() || !isAccessibilityEnabled || isBatteryOptimized) {
       item {
         Card(
-          shape = RoundedCornerShape(12.dp),
-          colors = CardDefaults.cardColors(containerColor = NexusAmber.copy(alpha = 0.15f)),
-          modifier = Modifier.border(1.dp, NexusAmber.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+          shape = RoundedCornerShape(14.dp),
+          colors = CardDefaults.cardColors(containerColor = NexusAmber.copy(alpha = 0.12f)),
+          modifier = Modifier.border(1.dp, NexusAmber.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
+          Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(Icons.Default.Warning, contentDescription = null, tint = NexusAmber, modifier = Modifier.size(20.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("Background Action Required", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
+              Text("Background Operations Alert", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-              "App needs unrestricted battery usage and touch control permissions to remain stable and functional in the background.",
+              "Unrestricted battery and touch accessibility permissions are recommended for robust background telemetry and remote control.",
               fontSize = 12.sp,
-              color = Color.LightGray
+              color = Color.LightGray,
+              lineHeight = 16.sp
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               if (ungrantedRuntime.isNotEmpty()) {
                 Button(
@@ -382,7 +398,7 @@ fun DashboardTab(
                   colors = ButtonDefaults.buttonColors(containerColor = NexusAmber),
                   modifier = Modifier.weight(1f).testTag("grant_runtime_perms_btn")
                 ) {
-                  Text("Grant Perms", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                  Text("Perms", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
               }
               if (isBatteryOptimized) {
@@ -391,7 +407,7 @@ fun DashboardTab(
                   colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
                   modifier = Modifier.weight(1f)
                 ) {
-                  Text("Unrestrict Battery", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                  Text("Battery", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
               }
               if (!isAccessibilityEnabled) {
@@ -399,7 +415,7 @@ fun DashboardTab(
                   onClick = onOpenAccessibility,
                   modifier = Modifier.weight(1f).testTag("enable_accessibility_btn")
                 ) {
-                  Text("Touch Ctrl", color = NexusCyan, fontSize = 10.sp)
+                  Text("Touch", color = NexusCyan, fontSize = 11.sp)
                 }
               }
             }
@@ -411,10 +427,11 @@ fun DashboardTab(
     // 1. Connection & Pairing Status Banner
     item {
       Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -449,14 +466,14 @@ fun DashboardTab(
                   "PAIRING_PENDING" -> NexusAmber
                   else -> Color.White
                 },
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
               )
             }
           }
 
           Spacer(modifier = Modifier.height(16.dp))
 
-          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(
               onClick = { viewModel.requestPairing() },
               enabled = !isPairingLoading,
@@ -466,7 +483,7 @@ fun DashboardTab(
               if (isPairingLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
               } else {
-                Text("Pair Device", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
+                Text("Pair Node", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
               }
             }
 
@@ -475,8 +492,8 @@ fun DashboardTab(
               modifier = Modifier.weight(1f).testTag("screen_share_btn")
             ) {
               Icon(Icons.Default.Cast, contentDescription = null, modifier = Modifier.size(16.dp))
-              Spacer(modifier = Modifier.width(4.dp))
-              Text("Screen Share")
+              Spacer(modifier = Modifier.width(6.dp))
+              Text("Stream")
             }
           }
         }
@@ -485,30 +502,30 @@ fun DashboardTab(
 
     // 2. Telemetry Grid
     item {
-      Text("Hardware Telemetry", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+      Text("Live Hardware Telemetry", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
     }
 
     item {
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         // Battery Card
         Card(
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           modifier = Modifier.weight(1f),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
-            Text("BATTERY", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("${telemetry.batteryLevel}%", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+          Column(modifier = Modifier.padding(16.dp)) {
+            Text("BATTERY LEVEL", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text("${telemetry.batteryLevel}%", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
             Text(
               if (telemetry.isCharging) "⚡ Charging" else "Discharging",
               fontSize = 11.sp,
               color = if (telemetry.isCharging) NexusEmerald else Color.Gray
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             LinearProgressIndicator(
               progress = { telemetry.batteryLevel / 100f },
-              modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+              modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
               color = if (telemetry.batteryLevel < 20) NexusRose else NexusEmerald,
               trackColor = Color.DarkGray
             )
@@ -517,17 +534,17 @@ fun DashboardTab(
 
         // Thermal Card
         Card(
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           modifier = Modifier.weight(1f),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
-            Text("TEMPERATURE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
+          Column(modifier = Modifier.padding(16.dp)) {
+            Text("THERMAL SENSOR", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
               if (telemetry.batteryTemp != null) "${telemetry.batteryTemp}°C" else "Nominal",
-              fontSize = 22.sp,
-              fontWeight = FontWeight.Bold
+              fontSize = 24.sp,
+              fontWeight = FontWeight.ExtraBold
             )
             Text("Battery Thermal", fontSize = 11.sp, color = Color.Gray)
           }
@@ -539,31 +556,31 @@ fun DashboardTab(
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         // Storage Card
         Card(
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           modifier = Modifier.weight(1f),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
-            Text("STORAGE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
+          Column(modifier = Modifier.padding(16.dp)) {
+            Text("STORAGE FREE", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Spacer(modifier = Modifier.height(6.dp))
             val freeGb = (telemetry.storageFreeMb / 1024.0).let { "%.1f".format(it) }
             val totalGb = (telemetry.storageTotalMb / 1024.0).let { "%.1f".format(it) }
-            Text("${freeGb} GB", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("of $totalGb GB Free", fontSize = 11.sp, color = Color.Gray)
+            Text("${freeGb} GB", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+            Text("of $totalGb GB Available", fontSize = 11.sp, color = Color.Gray)
           }
         }
 
         // Network Card
         Card(
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           modifier = Modifier.weight(1f),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-          Column(modifier = Modifier.padding(14.dp)) {
-            Text("NETWORK LINK", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(telemetry.networkType, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text(telemetry.wifiSsid ?: "Active", fontSize = 11.sp, color = Color.Gray)
+          Column(modifier = Modifier.padding(16.dp)) {
+            Text("UPLINK NETWORK", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(telemetry.networkType, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            Text(telemetry.wifiSsid ?: "Active Link", fontSize = 11.sp, color = Color.Gray)
           }
         }
       }
@@ -571,15 +588,16 @@ fun DashboardTab(
 
     // 3. Real-Time Activity Log
     item {
-      Text("Agent Event Trail", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+      Text("Agent Activity Trail", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
     }
 
     item {
       Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF060911))
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF060911)),
+        modifier = Modifier.border(1.dp, Color(0xFF1E293B), RoundedCornerShape(14.dp))
       ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
           Text(
             text = "> $lastLog",
             fontFamily = FontFamily.Monospace,
@@ -598,7 +616,8 @@ fun PermissionsTab(
   onOpenSettings: () -> Unit,
   onOpenAccessibility: () -> Unit,
   onRequestPermissions: () -> Unit,
-  onDisableBatteryRestrictions: () -> Unit
+  onDisableBatteryRestrictions: () -> Unit,
+  onGrantAllFilesAccess: () -> Unit
 ) {
   val total = permissions.size
   val grantedCount = permissions.count { it.isGranted }
@@ -613,17 +632,17 @@ fun PermissionsTab(
     // Top Summary Banner Card
     item {
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
           containerColor = if (allGranted) NexusEmerald.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
         ),
         modifier = Modifier.border(
           width = 1.dp,
           color = if (allGranted) NexusEmerald.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-          shape = RoundedCornerShape(14.dp)
+          shape = RoundedCornerShape(16.dp)
         )
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -631,12 +650,12 @@ fun PermissionsTab(
           ) {
             Column {
               Text(
-                text = "Security & Capability Status",
-                fontSize = 17.sp,
+                text = "Security & Shields",
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
               )
               Text(
-                text = "$grantedCount of $total capabilities active & authorized",
+                text = "$grantedCount of $total capabilities active",
                 fontSize = 12.sp,
                 color = Color.Gray
               )
@@ -646,7 +665,7 @@ fun PermissionsTab(
               color = if (allGranted) NexusEmerald.copy(alpha = 0.2f) else NexusAmber.copy(alpha = 0.2f)
             ) {
               Text(
-                text = if (allGranted) "ACTIVE" else "ACTION REQUIRED",
+                text = if (allGranted) "ACTIVE" else "ACTION REQ",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (allGranted) NexusEmerald else NexusAmber,
@@ -655,7 +674,7 @@ fun PermissionsTab(
             }
           }
 
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(14.dp))
           LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier
@@ -665,7 +684,7 @@ fun PermissionsTab(
             color = if (allGranted) NexusEmerald else NexusCyan,
             trackColor = Color.DarkGray
           )
-          Spacer(modifier = Modifier.height(14.dp))
+          Spacer(modifier = Modifier.height(16.dp))
 
           Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -673,25 +692,25 @@ fun PermissionsTab(
               colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
               modifier = Modifier.weight(1f).testTag("request_perms_btn")
             ) {
-              Text("Grant Runtime Perms", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+              Text("Grant Perms", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
             Button(
               onClick = onOpenAccessibility,
               colors = ButtonDefaults.buttonColors(containerColor = NexusAmber),
               modifier = Modifier.weight(1f).testTag("open_accessibility_btn")
             ) {
-              Text("Accessibility Settings", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+              Text("Touch Service", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
             }
           }
 
-          Spacer(modifier = Modifier.height(6.dp))
+          Spacer(modifier = Modifier.height(8.dp))
           OutlinedButton(
             onClick = onOpenSettings,
             modifier = Modifier.fillMaxWidth().testTag("open_settings_btn")
           ) {
             Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Open System App Details", fontSize = 12.sp)
+            Text("Open System App Settings", fontSize = 12.sp)
           }
         }
       }
@@ -699,28 +718,30 @@ fun PermissionsTab(
 
     item {
       Text(
-        text = "Declared Agent Capabilities",
+        text = "Declared Capabilities",
         fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
+        fontSize = 15.sp,
+        color = Color.White,
         modifier = Modifier.padding(top = 4.dp)
       )
     }
 
     items(permissions) { perm ->
       val isAccessibility = perm.permission == "android.permission.BIND_ACCESSIBILITY_SERVICE"
+      val isAllFilesAccess = perm.permission == "android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION"
 
       Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
           containerColor = if (perm.isGranted) MaterialTheme.colorScheme.surfaceVariant else NexusRose.copy(alpha = 0.08f)
         ),
         modifier = Modifier.border(
           width = 1.dp,
           color = if (perm.isGranted) Color.Transparent else NexusRose.copy(alpha = 0.25f),
-          shape = RoundedCornerShape(12.dp)
+          shape = RoundedCornerShape(14.dp)
         )
       ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
           Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -768,7 +789,7 @@ fun PermissionsTab(
           }
 
           if (!perm.isGranted) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             if (isAccessibility) {
               Button(
                 onClick = onOpenAccessibility,
@@ -784,6 +805,14 @@ fun PermissionsTab(
                 modifier = Modifier.fillMaxWidth()
               ) {
                 Text("Disable Battery Restrictions", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+              }
+            } else if (isAllFilesAccess) {
+              Button(
+                onClick = onGrantAllFilesAccess,
+                colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("Allow All Files Access (Android Settings)", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 11.sp)
               }
             } else {
               Button(
@@ -803,7 +832,7 @@ fun PermissionsTab(
 
 @Composable
 fun SettingsTab(viewModel: AgentViewModel) {
-  var serverInput by remember { mutableStateOf(viewModel.sessionManager.serverUrl) }
+  var serverInput by remember { mutableStateOf("") }
   var isSaved by remember { mutableStateOf(false) }
   var selectedSyncInterval by remember { mutableStateOf(15) }
   var showResetConfirm by remember { mutableStateOf(false) }
@@ -845,19 +874,19 @@ fun SettingsTab(viewModel: AgentViewModel) {
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
     item {
-      Text("Platform & Agent Configuration", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+      Text("Platform & Configuration", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 
     // 1. Server Uplink Config Card
     item {
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
           Text("Limbo Backend Server Address", fontWeight = FontWeight.Bold, fontSize = 14.sp)
           Text("Set self-hosted server address or IP endpoint for real-time WebSocket telemetry.", fontSize = 12.sp, color = Color.Gray)
-          Spacer(modifier = Modifier.height(10.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
           OutlinedTextField(
             value = serverInput,
@@ -870,34 +899,23 @@ fun SettingsTab(viewModel: AgentViewModel) {
             label = { Text("Server URL") }
           )
 
-          Spacer(modifier = Modifier.height(10.dp))
+          Spacer(modifier = Modifier.height(12.dp))
 
-          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
-              onClick = {
-                serverInput = "http://10.0.2.2:8000"
-                viewModel.updateServerUrl(serverInput)
-                isSaved = true
-              },
-              modifier = Modifier.weight(1f)
-            ) {
-              Text("10.0.2.2 (Emulator)", fontSize = 10.sp)
-            }
-
-            Button(
-              onClick = {
-                viewModel.updateServerUrl(serverInput)
-                isSaved = true
-              },
-              colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
-              modifier = Modifier.weight(1f).testTag("save_server_btn")
-            ) {
-              Text(if (isSaved) "Saved ✓" else "Save & Reconnect", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 11.sp)
-            }
+          Button(
+            onClick = {
+              viewModel.updateServerUrl(serverInput)
+              isSaved = true
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
+            modifier = Modifier.fillMaxWidth().testTag("save_server_btn")
+          ) {
+            Text(if (isSaved) "Saved ✓" else "Save Server URL", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold, fontSize = 12.sp)
           }
 
+
+
           if (pingStatus != null) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(pingStatus ?: "", fontSize = 11.sp, color = NexusEmerald, fontWeight = FontWeight.SemiBold)
           }
         }
@@ -907,15 +925,15 @@ fun SettingsTab(viewModel: AgentViewModel) {
     // 2. Telemetry & Sync Frequency Card
     item {
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Text("Telemetry Refresh & Sync Interval", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-          Text("Configure how frequently battery, RAM, storage, and network stats are sent to the console.", fontSize = 12.sp, color = Color.Gray)
-          Spacer(modifier = Modifier.height(12.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+          Text("Telemetry Sync Interval", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+          Text("Configure frequency for battery, thermal, storage, and network reporting.", fontSize = 12.sp, color = Color.Gray)
+          Spacer(modifier = Modifier.height(14.dp))
 
-          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(5, 15, 30, 60).forEach { intervalSec ->
               val isSelected = selectedSyncInterval == intervalSec
               Button(
@@ -927,11 +945,11 @@ fun SettingsTab(viewModel: AgentViewModel) {
                   containerColor = if (isSelected) NexusCyan else MaterialTheme.colorScheme.surface
                 ),
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(vertical = 6.dp)
+                contentPadding = PaddingValues(vertical = 8.dp)
               ) {
                 Text(
                   text = "${intervalSec}s",
-                  fontSize = 11.sp,
+                  fontSize = 12.sp,
                   fontWeight = FontWeight.Bold,
                   color = if (isSelected) Color(0xFF0F172A) else Color.White
                 )
@@ -945,12 +963,12 @@ fun SettingsTab(viewModel: AgentViewModel) {
     // 3. Installation Profile & Copy Identifiers Card
     item {
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-          Text("Device Identity & Cryptographic Keys", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-          Spacer(modifier = Modifier.height(10.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+          Text("Device Identity & Keys", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+          Spacer(modifier = Modifier.height(12.dp))
 
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
@@ -963,7 +981,7 @@ fun SettingsTab(viewModel: AgentViewModel) {
             }
           }
 
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(14.dp))
 
           Row(
             modifier = Modifier.fillMaxWidth(),
@@ -992,7 +1010,7 @@ fun SettingsTab(viewModel: AgentViewModel) {
             }
           }
 
-          Spacer(modifier = Modifier.height(8.dp))
+          Spacer(modifier = Modifier.height(10.dp))
 
           Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1020,7 +1038,7 @@ fun SettingsTab(viewModel: AgentViewModel) {
             }
           }
 
-          Spacer(modifier = Modifier.height(12.dp))
+          Spacer(modifier = Modifier.height(14.dp))
 
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
@@ -1031,18 +1049,18 @@ fun SettingsTab(viewModel: AgentViewModel) {
               colors = ButtonDefaults.buttonColors(containerColor = NexusIndigo),
               modifier = Modifier.weight(1f)
             ) {
-              Text("Reconnect WebSocket", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+              Text("Reconnect WS", fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
 
             OutlinedButton(
               onClick = {
                 viewModel.refreshTelemetry()
                 viewModel.refreshPermissions()
-                pingStatus = "Refreshed telemetry & permissions ✓"
+                pingStatus = "Refreshed stats & permissions ✓"
               },
               modifier = Modifier.weight(1f)
             ) {
-              Text("Sync All Stats", fontSize = 11.sp)
+              Text("Sync Stats", fontSize = 11.sp)
             }
           }
         }
@@ -1052,11 +1070,11 @@ fun SettingsTab(viewModel: AgentViewModel) {
     // 4. Danger Zone Card
     item {
       Card(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = NexusRose.copy(alpha = 0.1f)),
-        modifier = Modifier.border(1.dp, NexusRose.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+        modifier = Modifier.border(1.dp, NexusRose.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
       ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
           Text("Unpair & Reset Agent", fontWeight = FontWeight.Bold, color = NexusRose, fontSize = 14.sp)
           Text("Clear local device credentials and unpair from the management console.", fontSize = 12.sp, color = Color.Gray)
           Spacer(modifier = Modifier.height(12.dp))

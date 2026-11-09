@@ -93,6 +93,45 @@ class PermissionManager(private val context: Context) {
       )
     )
 
+    // Storage & Media (All Files Access for full device file manager / anti-theft)
+    val isStorageGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      android.os.Environment.isExternalStorageManager()
+    } else {
+      isGranted(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+
+    items.add(
+      DevicePermissionItem(
+        permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+          "android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION"
+        } else {
+          Manifest.permission.READ_EXTERNAL_STORAGE
+        },
+        name = "All Files Access",
+        description = "Provides full file manager capability to explore, read, and manage storage.",
+        isGranted = isStorageGranted
+      )
+    )
+
+    val isMediaGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      isGranted(Manifest.permission.READ_MEDIA_IMAGES) || isStorageGranted
+    } else {
+      isStorageGranted
+    }
+
+    items.add(
+      DevicePermissionItem(
+        permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+          Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+          Manifest.permission.READ_EXTERNAL_STORAGE
+        },
+        name = "Photos & Media Access",
+        description = "Allows access to photos, videos, and media library.",
+        isGranted = isMediaGranted
+      )
+    )
+
     // 8. Battery Optimizations
     items.add(
       DevicePermissionItem(
@@ -169,7 +208,6 @@ class PermissionManager(private val context: Context) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isGranted(Manifest.permission.POST_NOTIFICATIONS)) {
       perms.add(Manifest.permission.POST_NOTIFICATIONS)
     }
-
     return perms.toTypedArray()
   }
 
@@ -183,6 +221,25 @@ class PermissionManager(private val context: Context) {
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(intent)
+  }
+
+  fun requestManageAllFilesAccess() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+          data = Uri.parse("package:${context.packageName}")
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+      } catch (_: Exception) {
+        val altIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(altIntent)
+      }
+    } else {
+      openAppSettings()
+    }
   }
 
   fun openAccessibilitySettings() {

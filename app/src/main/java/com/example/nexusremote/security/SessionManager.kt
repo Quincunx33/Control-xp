@@ -9,7 +9,7 @@ class SessionManager(context: Context) {
     context.getSharedPreferences("nexus_remote_agent_prefs", Context.MODE_PRIVATE)
 
   var serverUrl: String
-    get() = prefs.getString("server_url", "http://10.0.2.2:8000") ?: "http://10.0.2.2:8000"
+    get() = prefs.getString("server_url", "") ?: ""
     set(value) = prefs.edit().putString("server_url", value.trim().removeSuffix("/")).apply()
 
   var deviceId: String?

@@ -1,5 +1,5 @@
 {
-  "name": "Nexus Remote",
+  "name": "Control-XP",
   "description": "Secure Android Remote Device Management Platform",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
