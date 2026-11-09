@@ -3,7 +3,7 @@
 ## 1. Project Directory Structure
 ```
 nexus-remote/
-├── requirements.txt            # Pinned Limbo and Bot Guard Git dependencies
+├── requirements.txt            # Pinned Limbo and Bot Guard PyPI packages
 ├── app/                        # Android Native Agent (Kotlin, Compose)
 │   ├── src/main/java/com/example/
 │   │   ├── MainActivity.kt

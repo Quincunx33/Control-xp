@@ -13,7 +13,7 @@
 - 🔒 **Secure Device Pairing**: Short-lived 6-character pairing codes with mandatory explicit on-device user confirmation before access is granted.
 - 📡 **Real-Time WebSocket & WebRTC**: Authenticated WebSocket gateway for live presence, telemetry streaming, strict command delivery, and WebRTC screen sharing signaling.
 - 🎥 **MediaProjection Screen Sharing**: Android system consent workflow with persistent foreground service notification (`ScreenCaptureService`) and one-tap stop controls.
-- 📦 **Pinned Python Dependencies**: Limbo and Bot Guard are installed from their upstream GitHub repositories at pinned commits via `requirements.txt`.
+- 📦 **Pinned Python Dependencies**: Limbo and Bot Guard are installed from PyPI as `limbo33` and `bot-guard-py`, with versions pinned in `requirements.txt`.
 
 ---
 

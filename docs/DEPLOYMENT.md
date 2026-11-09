@@ -3,7 +3,7 @@
 ## 1. Prerequisites
 - Linux VPS (Ubuntu 22.04 LTS or Debian 12 recommended)
 - Python 3.10+
-- Git (for the pinned GitHub package sources in `requirements.txt`)
+- Git (to clone the application repository)
 - Nginx or Cloudflare Reverse Proxy
 - Domain name with SSL certificates (Let's Encrypt / Certbot)
 
