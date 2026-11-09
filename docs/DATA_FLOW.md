@@ -178,3 +178,115 @@ Do not expose broad Android objects, filesystem access, tokens or privileged met
 - [ ] Test that device lists and permitted changes stay consistent across clients.
 - [ ] Add integration tests for authorization, revocation, session expiry and live events.
 - [ ] Add WebView bridge only if an embedded web surface is actually required.
+
+
+## 10. Python/Limbo HTTP API — current repository routes
+
+These routes were read from `backend/nexus/app.py` on the current main branch. They describe the routes currently registered in the Python server, not a proposal. All production traffic must use HTTPS.
+
+| Method | Endpoint | Authentication / purpose |
+|---|---|---|
+| GET | `/api/v1/health` | Public health/version check |
+| POST | `/api/v1/auth/register` | Create account |
+| POST | `/api/v1/auth/login` | Authenticate and create session |
+| POST | `/api/v1/auth/logout` | Revoke the supplied Bearer session |
+| GET | `/api/v1/auth/me` | Authenticated current account |
+| GET | `/api/v1/auth/sessions` | Authenticated account sessions |
+| GET | `/api/v1/devices` | List devices belonging to account |
+| POST | `/api/v1/devices/register` | Register an agent/device for pairing |
+| GET | `/api/v1/devices/{id}` | Read an owned device |
+| PATCH | `/api/v1/devices/{id}` | Rename an owned device |
+| DELETE | `/api/v1/devices/{id}` | Delete an owned device |
+| POST | `/api/v1/devices/{id}/revoke` | Revoke device access |
+| GET | `/api/v1/devices/{id}/status` | Read device status and telemetry |
+| POST | `/api/v1/pairing/create` | Device starts a pairing request |
+| POST | `/api/v1/pairing/verify` | Authenticated account verifies pairing code |
+| POST | `/api/v1/pairing/approve` | Device-side approval of pairing |
+| POST | `/api/v1/pairing/reject` | Device-side rejection of pairing |
+| GET | `/api/v1/pairing/{id}` | Read pairing request status |
+| GET | `/api/v1/commands/registry` | Read supported command definitions |
+| GET | `/api/v1/devices/{id}/commands` | List commands for an owned device |
+| POST | `/api/v1/devices/{id}/commands` | Create an authorized device command |
+| GET | `/api/v1/commands/{id}` | Read command status/result |
+| POST | `/api/v1/commands/{id}/cancel` | Cancel a command |
+| POST | `/api/v1/files/create` | Create an authorized file-transfer record |
+| POST | `/api/v1/files/upload/{id}` | Upload file bytes (see security note below) |
+| GET | `/api/v1/files/device/{id}` | List transfers for an owned device |
+| GET | `/api/v1/audit` | Authenticated account audit history |
+| GET | `/api/v1/security/events` | Authenticated security event listing |
+| WS | `/ws` | WebSocket gateway for authenticated real-time communication |
+
+### Authentication convention
+
+The current browser API client sends `Authorization: Bearer <session-token>` for authenticated REST requests. Kotlin should use the same API contract, with a typed API service/repository and secure token storage. The WebSocket client connects to `/ws` and sends an authentication frame after opening:
+
+~~~json
+{
+  "type": "auth",
+  "token": "<session-token>"
+}
+~~~
+
+Do not put a permanent API secret in the APK. The session token is a user session credential and must be protected, expired and revocable.
+
+### Example Kotlin request shapes
+
+Registration:
+
+~~~http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{"email":"user@example.com","password":"strong-password","name":"User"}
+~~~
+
+Login:
+
+~~~http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{"email":"user@example.com","password":"strong-password","device_info":"NEXUS Android"}
+~~~
+
+List devices:
+
+~~~http
+GET /api/v1/devices
+Authorization: Bearer <session-token>
+~~~
+
+Rename device:
+
+~~~http
+PATCH /api/v1/devices/device_123
+Authorization: Bearer <session-token>
+Content-Type: application/json
+
+{"name":"My Phone"}
+~~~
+
+Request a supported device action:
+
+~~~http
+POST /api/v1/devices/device_123/commands
+Authorization: Bearer <session-token>
+Content-Type: application/json
+
+{"command_type":"battery_check","params":{}}
+~~~
+
+These are illustrative payload shapes. Kotlin DTOs must match the backend's actual response models and command registry; do not assume every command is available on every Android version.
+
+### Important API security audit items
+
+The route list is not a claim that every endpoint is production-safe. Before public launch, explicitly review:
+- Restrict CORS from wildcard origins to the official website/app deployment needs; native Android clients are not governed by browser CORS.
+- Ensure device registration, pairing create/approve/reject/status and file upload are bound to a device credential or authorized owner as appropriate. Do not leave sensitive device operations open to arbitrary unauthenticated callers.
+- Require ownership checks and authorization for command registry exposure where needed, command results, file metadata and security logs.
+- Authenticate and authorize file upload against the transfer owner/device; enforce file size limits, safe filenames, storage isolation and checksum verification. Never return internal filesystem paths to clients.
+- Validate WebSocket authentication before accepting commands/signaling and authorize each message by account, device and action.
+- Use secure browser session cookies (HttpOnly, Secure, SameSite) or a carefully designed token strategy; add CSRF protection if cookie-authenticated mutations are used.
+- Ensure security-event endpoints return only the requesting account's permitted events, not other users' global events.
+
+This audit list is deliberate: route existence does not prove the handler has the required authorization checks.
