@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account - NEXUS REMOTE</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-icon" style="margin: 0 auto; width: 48px; height: 48px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+      </div>
+      <h1 class="auth-title">NEXUS REMOTE</h1>
+      <p class="auth-desc">Create Management Account</p>
+    </div>
+
+    <div id="error-banner" class="error-banner"></div>
+    <div id="success-banner" class="success-banner"></div>
+
+    <form id="register-form">
+      <div class="form-group">
+        <label class="form-label" for="name">Operator Full Name</label>
+        <input class="form-input" type="text" id="name" required placeholder="Alex Vance" autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input class="form-input" type="email" id="email" required placeholder="alex@nexus.local">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password (min 8 characters)</label>
+        <input class="form-input" type="password" id="password" required minlength="8" placeholder="••••••••••••">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm-password">Confirm Password</label>
+        <input class="form-input" type="password" id="confirm-password" required minlength="8" placeholder="••••••••••••">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="reg-btn">
+        Register Account
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+      Already have an account? <a href="/login">Sign in here</a>
+    </div>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    if (API.isAuthenticated()) {
+      window.location.href = '/dashboard';
+    }
+
+    const form = document.getElementById('register-form');
+    const errBanner = document.getElementById('error-banner');
+    const succBanner = document.getElementById('success-banner');
+    const btn = document.getElementById('reg-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBanner.classList.remove('active');
+      succBanner.classList.remove('active');
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (password !== confirmPassword) {
+        errBanner.innerText = 'Passwords do not match';
+        errBanner.classList.add('active');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Creating account...';
+
+      try {
+        await API.post('/api/v1/auth/register', { name, email, password });
+        succBanner.innerText = 'Account created successfully! Authenticating...';
+        succBanner.classList.add('active');
+
+        // Automatically log in
+        const authRes = await API.post('/api/v1/auth/login', { email, password });
+        API.setToken(authRes.token);
+        API.setUser(authRes.user);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 800);
+      } catch (err) {
+        errBanner.innerText = err.message || 'Registration failed';
+        errBanner.classList.add('active');
+        btn.disabled = false;
+        btn.innerText = 'Register Account';
+      }
+    });
+  </script>
+</body>
+</html>

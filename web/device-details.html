@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Control Center - NEXUS REMOTE</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">NEXUS REMOTE</div>
+          <span class="brand-badge">Secured</span>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="nav-item active"><a href="/devices">Devices</a></li>
+        <li class="nav-item"><a href="/sessions">Sessions</a></li>
+        <li class="nav-item"><a href="/settings">Settings</a></li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <a href="/devices" class="btn btn-secondary btn-sm" style="width: 100%; margin-bottom: 0.5rem;">
+          &larr; Back to Fleet
+        </a>
+        <button class="btn btn-danger btn-sm" style="width: 100%;" id="btn-revoke-device">
+          Revoke Access
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="top-bar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <h1 class="top-bar-title" id="page-device-name">Loading Device...</h1>
+          <span id="page-device-status" class="status-badge">...</span>
+        </div>
+        <div class="top-bar-actions">
+          <div id="ws-badge" class="live-badge connecting">
+            <span class="pulse-dot"></span>
+            <span id="ws-badge-text">WebSocket</span>
+          </div>
+          <button class="btn btn-danger btn-sm" id="btn-panic-siren" onclick="toggleSiren()">
+            🚨 Trigger Panic Siren
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="triggerCommand('sync_status')">
+            ⚡ Sync Telemetry
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab('overview')">Overview & Telemetry</button>
+          <button class="tab-btn" onclick="switchTab('screen')">Screen & Touch Control</button>
+          <button class="tab-btn" onclick="switchTab('location')">GPS Location & Map</button>
+          <button class="tab-btn" onclick="switchTab('apps')">Installed Apps</button>
+          <button class="tab-btn" onclick="switchTab('explorer')">File Explorer</button>
+          <button class="tab-btn" onclick="switchTab('clipboard')">Clipboard Sync</button>
+          <button class="tab-btn" onclick="switchTab('commands')">Remote Commands</button>
+          <button class="tab-btn" onclick="switchTab('diagnostics')">Deep Diagnostics</button>
+          <button class="tab-btn" onclick="switchTab('permissions')">Permissions Hub</button>
+          <button class="tab-btn" onclick="switchTab('security')">Security & Identity</button>
+        </nav>
+
+        <!-- TAB 1: OVERVIEW & TELEMETRY -->
+        <div id="tab-overview" class="tab-pane active">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">Battery Level</span>
+                <div class="metric-icon">🔋</div>
+              </div>
+              <div class="metric-value" id="val-battery">--%</div>
+              <div class="metric-subtitle" id="val-battery-sub">Standby</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">RAM Memory</span>
+                <div class="metric-icon">⚡</div>
+              </div>
+              <div class="metric-value" id="val-ram">-- GB</div>
+              <div class="metric-subtitle" id="val-ram-sub">of -- GB available</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">Available Storage</span>
+                <div class="metric-icon">💾</div>
+              </div>
+              <div class="metric-value" id="val-storage">-- GB</div>
+              <div class="metric-subtitle" id="val-storage-total">of -- GB internal</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">Thermal Sensor</span>
+                <div class="metric-icon">🌡️</div>
+              </div>
+              <div class="metric-value" id="val-temp">--°C</div>
+              <div class="metric-subtitle">Battery temperature</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">Network Link</span>
+                <div class="metric-icon">📶</div>
+              </div>
+              <div class="metric-value" style="font-size: 1.35rem;" id="val-network">WIFI</div>
+              <div class="metric-subtitle" id="val-wifi-ssid">Connected</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">GPS Geolocation</span>
+                <div class="metric-icon">📍</div>
+              </div>
+              <div class="metric-value" style="font-size: 1.1rem; font-family: var(--font-mono);" id="val-gps-coords">-- , --</div>
+              <div class="metric-subtitle" id="val-gps-accuracy">Accuracy: --</div>
+            </div>
+          </div>
+
+          <!-- Anti-theft Quick Actions -->
+          <div class="metric-card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(244,63,94,0.08), rgba(15,23,42,1)); border-color: rgba(244,63,94,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--accent-rose); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>🚨</span> Anti-Theft Emergency Security System
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                  Play high-intensity siren at 100% volume and strobe the rear camera flashlight to locate or secure a lost/stolen device.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.75rem;">
+                <button class="btn btn-danger btn-sm" onclick="triggerCommand('play_siren')">
+                  🔊 Trigger Siren & Strobe
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="triggerCommand('stop_siren')">
+                  ⏹ Silence Alarm
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hardware specs card -->
+          <div class="metric-card" style="margin-bottom: 2rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Hardware & OS Specifications</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; font-size: 0.875rem;">
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">DEVICE MODEL</div>
+                <div style="font-weight: 600;" id="spec-model">--</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">ANDROID VERSION</div>
+                <div style="font-weight: 600;" id="spec-android">--</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">SCREEN RESOLUTION</div>
+                <div style="font-weight: 600;" id="spec-res">--</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">AGENT APP VERSION</div>
+                <div style="font-weight: 600;" id="spec-app">--</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">INSTALLATION IDENTITY</div>
+                <div style="font-weight: 600; font-family: var(--font-mono); font-size: 0.8rem;" id="spec-id">--</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem;">LAST SYNCHRONIZED</div>
+                <div style="font-weight: 600;" id="spec-lastseen">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: SCREEN & TOUCH CONTROL (WEBRTC + ACCESSIBILITY) -->
+        <div id="tab-screen" class="tab-pane">
+          <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 600;">MediaProjection Screen Stream & Remote Touch</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Interactive remote control powered by WebRTC & Android Accessibility Service. Click or drag directly on the screen!
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="btn btn-primary btn-sm" id="btn-start-stream" onclick="startStream()">
+                ▶ Request Stream Session
+              </button>
+              <button class="btn btn-danger btn-sm" id="btn-stop-stream" onclick="stopStream()" style="display: none;">
+                ⏹ Stop Stream
+              </button>
+            </div>
+          </div>
+
+          <div style="max-width: 480px; margin: 0 auto;">
+            <div class="stream-container" id="stream-box" style="position: relative; cursor: crosshair;">
+              <video id="remote-stream-video" autoplay playsinline class="stream-video" style="display: none; width: 100%; border-radius: var(--radius-md) var(--radius-md) 0 0;"></video>
+              <div id="stream-placeholder" class="stream-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <div style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">Screen Share Inactive</div>
+                <p style="max-width: 380px; font-size: 0.85rem;">Clicking <em>Request Stream Session</em> will trigger an official Android system MediaProjection consent dialog on the device.</p>
+              </div>
+              <div id="stream-status-pill" class="stream-overlay" style="display: none;">
+                <span class="live-badge" id="stream-badge">WebRTC Connected</span>
+              </div>
+            </div>
+
+            <!-- Virtual Android Navigation Bar -->
+            <div class="virtual-nav-bar">
+              <button class="virtual-key-btn" title="Back Button" onclick="injectKey('BACK')">
+                ◀ Back
+              </button>
+              <button class="virtual-key-btn" title="Home Button" onclick="injectKey('HOME')">
+                ⌂ Home
+              </button>
+              <button class="virtual-key-btn" title="Recent Apps" onclick="injectKey('RECENTS')">
+                ▢ Recents
+              </button>
+              <button class="virtual-key-btn" title="Open Notification Shade" onclick="injectKey('NOTIFICATIONS')">
+                🔔 Notifs
+              </button>
+              <button class="virtual-key-btn" title="Quick Settings" onclick="injectKey('QUICK_SETTINGS')">
+                ⚙ Settings
+              </button>
+              <button class="virtual-key-btn" title="Lock Device Screen" onclick="injectKey('LOCK_SCREEN')">
+                🔒 Lock
+              </button>
+              <button class="virtual-key-btn" title="Power Menu" onclick="injectKey('POWER_DIALOG')">
+                ⏻ Power
+              </button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
+              💡 Touch injections require the Nexus Accessibility Service to be active on the device.
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: GPS LOCATION & LIVE MAP -->
+        <div id="tab-location" class="tab-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 600;">Real-Time GPS Geolocation</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">High-accuracy device positioning rendered via OpenStreetMap.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="triggerCommand('get_location')">
+              📍 Poll Live GPS Coordinate
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items: start;">
+            <div id="device-map-container"></div>
+
+            <div class="metric-card">
+              <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">Coordinate Telemetry</h4>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem;">
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem;">LATITUDE</div>
+                  <div style="font-weight: 600; font-family: var(--font-mono);" id="map-lat">--</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem;">LONGITUDE</div>
+                  <div style="font-weight: 600; font-family: var(--font-mono);" id="map-lon">--</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem;">ACCURACY RADIUS</div>
+                  <div style="font-weight: 600;" id="map-acc">--</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem;">LAST GPS FIX</div>
+                  <div style="font-weight: 600;" id="map-time">--</div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                  <a id="external-maps-link" href="#" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">
+                    Open in External Maps &rarr;
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: INSTALLED APPS MANAGER -->
+        <div id="tab-apps" class="tab-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 600;">Installed Application Registry</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Browse packages and launch apps directly from the console.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <input type="text" id="app-search-filter" class="form-input" placeholder="Search app or package name..." style="width: 260px; font-size: 0.85rem;" oninput="filterApps()">
+              <button class="btn btn-primary btn-sm" onclick="triggerCommand('list_apps')">
+                🔄 Refresh Apps List
+              </button>
+            </div>
+          </div>
+
+          <div id="apps-container" class="apps-grid">
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--bg-surface); border-radius: var(--radius-md); color: var(--text-muted);">
+              Click "Refresh Apps List" to query installed applications from device.
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: STORAGE FILE EXPLORER -->
+        <div id="tab-explorer" class="tab-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 600;">Remote Storage File Explorer</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Browse authorized internal directories and download files directly.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" onclick="browseDirectory('/storage/emulated/0')">
+                🏠 Home Storage
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="browseDirectory('/storage/emulated/0/Download')">
+                📥 Downloads
+              </button>
+            </div>
+          </div>
+
+          <div class="file-path-breadcrumbs">
+            <span>Path:</span>
+            <input type="text" id="current-browse-path" class="form-input" style="flex-grow: 1; font-family: var(--font-mono); font-size: 0.8rem; padding: 0.35rem 0.6rem;" value="/storage/emulated/0/Download">
+            <button class="btn btn-primary btn-sm" onclick="browseDirectory(document.getElementById('current-browse-path').value)">
+              Go &rarr;
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">Type</th>
+                  <th>Name</th>
+                  <th>Size</th>
+                  <th>Last Modified</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="file-explorer-tbody">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Click "Go" or select a directory above to explore storage.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 6: CLIPBOARD SYNC -->
+        <div id="tab-clipboard" class="tab-pane">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="metric-card">
+              <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Push to Device Clipboard</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Send text or URLs directly to the Android device clipboard for instant pasting.
+              </p>
+              <textarea id="clipboard-input" class="form-input" rows="6" placeholder="Enter text to push to clipboard..." style="font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 1rem;"></textarea>
+              <button class="btn btn-primary btn-sm" onclick="sendClipboardText()">
+                📋 Push to Device Clipboard
+              </button>
+            </div>
+
+            <div class="metric-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 600;">Fetch Device Clipboard</h3>
+                <button class="btn btn-secondary btn-sm" onclick="triggerCommand('get_clipboard')">
+                  🔄 Read Clipboard
+                </button>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Query the current text contents from the device's clipboard manager.
+              </p>
+              <pre id="clipboard-output" class="code-block" style="min-height: 140px;">// Click 'Read Clipboard' to fetch text.</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: REMOTE COMMANDS -->
+        <div id="tab-commands" class="tab-pane">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="metric-card">
+              <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Authorized Command Console</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">Only strictly declared, auditable commands in the registry can be executed.</p>
+
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Diagnostic Ping</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Measure real-time round-trip latency</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('ping')">Execute</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Battery Telemetry Query</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Check detailed charging health & temp</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('battery_check')">Execute</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Vibrate Alert</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Pulse device vibrator (500ms)</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('vibrate_device', {duration_ms: 500})">Execute</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Send Administrative Notification</div>
+                  <input type="text" id="notif-title" class="form-input" placeholder="Alert Title" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
+                  <input type="text" id="notif-body" class="form-input" placeholder="Message content to display" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
+                  <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="sendNotificationAlert()">Deliver Notification</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Camera Photo Capture</div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('capture_photo', {camera: 'BACK'})">📷 Back Camera</button>
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('capture_photo', {camera: 'FRONT'})">🤳 Front Camera</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Record Audio Clip</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Record 5-second audio sample</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('record_audio', {duration_sec: 5})">Record Audio</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Display Lost Screen Overlay</div>
+                  <input type="text" id="overlay-title" class="form-input" placeholder="Notice Title" value="LOST DEVICE NOTICE" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
+                  <input type="text" id="overlay-msg" class="form-input" placeholder="Message content" value="Call owner if found: 01700000000" style="margin-bottom: 0.5rem; font-size: 0.8rem;">
+                  <button class="btn btn-danger btn-sm" style="width: 100%;" onclick="sendLostOverlay()">🔒 Display Overlay</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">GPS Geofence Status Check</div>
+                  <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="geofence-lat" class="form-input" placeholder="Center Lat" value="23.8103" style="font-size: 0.8rem;">
+                    <input type="text" id="geofence-lon" class="form-input" placeholder="Center Lon" value="90.4125" style="font-size: 0.8rem;">
+                    <input type="text" id="geofence-radius" class="form-input" placeholder="Radius (m)" value="1000" style="font-size: 0.8rem;">
+                  </div>
+                  <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="checkGeofence()">📍 Check Geofence</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Execute Shell Command</div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="shell-cmd-input" class="form-input" placeholder="e.g. uptime, df, free, getprop" style="font-size: 0.8rem;" value="uptime">
+                    <button class="btn btn-primary btn-sm" onclick="runShellCmd()">Run</button>
+                  </div>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Volume & Screen Brightness Control</div>
+                  <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('set_volume', {volume_percent: 80})">🔊 Set Vol 80%</button>
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('set_volume', {volume_percent: 0})">🔇 Mute Audio</button>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('set_brightness', {brightness_percent: 100})">☀️ Max Brightness</button>
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="triggerCommand('set_brightness', {brightness_percent: 20})">🌙 Low Brightness</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Network Interface Diagnostics</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Active IP addresses, Wi-Fi link speed & RSSI</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('network_diagnostics')">Query Network</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.9rem;">Security Health Check</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Lock screen protection, keyguard & ADB status</div>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="triggerCommand('security_health_check')">Run Check</button>
+                </div>
+
+                <div style="padding: 0.75rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem;">Thermal Warning Threshold (ºC)</div>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="thermal-thresh-input" class="form-input" placeholder="Threshold in °C" value="45.0" style="font-size: 0.8rem;">
+                    <button class="btn btn-secondary btn-sm" onclick="setThermalThresh()">Config</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Execution Output & Results</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Verified command results returned by the Android agent.</p>
+              <pre id="command-result-box" class="code-block">// Select a command to execute and view structured response.</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 8: DEEP DIAGNOSTICS -->
+        <div id="tab-diagnostics" class="tab-pane">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 600;">System & Kernel Diagnostics</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Query CPU cores, kernel uptime, hardware build, and memory thresholds.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="triggerCommand('system_diagnostics')">
+              🔬 Run Deep Diagnostics
+            </button>
+          </div>
+
+          <div class="metric-card">
+            <pre id="diagnostics-box" class="code-block" style="min-height: 250px;">// Click 'Run Deep Diagnostics' to query detailed hardware specs.</pre>
+          </div>
+        </div>
+
+        <!-- TAB 9: PERMISSIONS HUB -->
+        <div id="tab-permissions" class="tab-pane">
+          <div class="metric-card">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Android Permission Status</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+              Permissions are requested exclusively through official Android framework APIs. The agent never bypasses system consent.
+            </p>
+            <div id="permissions-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+          </div>
+        </div>
+
+        <!-- TAB 10: SECURITY & IDENTITY -->
+        <div id="tab-security" class="tab-pane">
+          <div class="metric-card" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Cryptographic Device Identity</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+              Authentication uses a high-entropy PBKDF2 device secret key stored securely on-device.
+            </p>
+            <div style="background: var(--bg-surface-elevated); padding: 1rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem;">
+              <div><strong>Device ID:</strong> <span id="sec-dev-id">--</span></div>
+              <div style="margin-top: 0.5rem;"><strong>Registration Timestamp:</strong> <span id="sec-registered-at">--</span></div>
+              <div style="margin-top: 0.5rem;"><strong>Hardware Integrity:</strong> Verified standard OS</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-color: rgba(244, 63, 94, 0.3);">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--accent-rose); margin-bottom: 0.5rem;">Revocation Zone</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+              Revoking access will delete device credentials from the database and permanently close all active streaming sessions and command pipelines.
+            </p>
+            <button class="btn btn-danger" onclick="revokeCurrentDevice()">
+              Permanently Revoke Device Credentials
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/websocket.js"></script>
+  <script src="/assets/js/webrtc.js"></script>
+  <script>
+    if (!API.isAuthenticated()) window.location.href = '/login';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceId = urlParams.get('id');
+
+    if (!deviceId) {
+      alert('Device ID required');
+      window.location.href = '/devices';
+    }
+
+    let currentDevice = null;
+    let streamViewer = null;
+    let leafletMap = null;
+    let mapMarker = null;
+    let mapCircle = null;
+    let installedAppsList = [];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+
+      const targetPane = document.getElementById(`tab-${tabId}`);
+      if (targetPane) targetPane.classList.add('active');
+
+      if (tabId === 'location') {
+        setTimeout(initOrUpdateMap, 200);
+      }
+    }
+
+    async function loadDeviceData() {
+      try {
+        const res = await API.get(`/api/v1/devices/${deviceId}`);
+        currentDevice = res.device;
+        renderDevice(currentDevice);
+      } catch (err) {
+        alert(err.message || 'Failed to load device details');
+        window.location.href = '/devices';
+      }
+    }
+
+    function renderDevice(dev) {
+      document.getElementById('page-device-name').innerText = dev.name;
+      const statusPill = document.getElementById('page-device-status');
+      statusPill.className = `status-badge ${dev.status.toLowerCase()}`;
+      statusPill.innerText = dev.status;
+
+      // Telemetry
+      const telem = dev.telemetry || {};
+      const battery = telem.battery_level ?? '--';
+      document.getElementById('val-battery').innerText = `${battery}%`;
+      document.getElementById('val-battery-sub').innerText = telem.charging ? '⚡ Fast Charging' : 'Discharging';
+
+      // RAM
+      if (telem.ram_free_mb && telem.ram_total_mb) {
+        const freeGb = (telem.ram_free_mb / 1024).toFixed(1);
+        const totalGb = (telem.ram_total_mb / 1024).toFixed(1);
+        document.getElementById('val-ram').innerText = `${freeGb} GB free`;
+        document.getElementById('val-ram-sub').innerText = `of ${totalGb} GB total`;
+      } else {
+        document.getElementById('val-ram').innerText = '-- GB';
+      }
+
+      document.getElementById('val-temp').innerText = telem.battery_temp ? `${telem.battery_temp.toFixed(1)}°C` : 'Nominal';
+      const freeGb = telem.storage_free_mb ? (telem.storage_free_mb / 1024).toFixed(1) : '--';
+      const totalGb = telem.storage_total_mb ? (telem.storage_total_mb / 1024).toFixed(1) : '--';
+      document.getElementById('val-storage').innerText = `${freeGb} GB`;
+      document.getElementById('val-storage-total').innerText = `of ${totalGb} GB internal`;
+
+      document.getElementById('val-network').innerText = telem.network_type || 'WIFI';
+      document.getElementById('val-wifi-ssid').innerText = telem.wifi_ssid || 'Secure Uplink';
+
+      // GPS
+      if (telem.latitude && telem.longitude) {
+        document.getElementById('val-gps-coords').innerText = `${telem.latitude.toFixed(4)}, ${telem.longitude.toFixed(4)}`;
+        document.getElementById('val-gps-accuracy').innerText = `Radius ±${(telem.accuracy || 10).toFixed(0)}m`;
+        document.getElementById('map-lat').innerText = telem.latitude.toFixed(6);
+        document.getElementById('map-lon').innerText = telem.longitude.toFixed(6);
+        document.getElementById('map-acc').innerText = `±${(telem.accuracy || 10).toFixed(1)} meters`;
+        document.getElementById('map-time').innerText = new Date(telem.updated_at * 1000).toLocaleTimeString();
+        document.getElementById('external-maps-link').href = `https://www.google.com/maps?q=${telem.latitude},${telem.longitude}`;
+      }
+
+      // Specs
+      document.getElementById('spec-model').innerText = dev.model;
+      document.getElementById('spec-android').innerText = `Android ${dev.android_version}`;
+      document.getElementById('spec-res').innerText = dev.screen_res || '1080x2400';
+      document.getElementById('spec-app').innerText = dev.app_version || '1.0.0';
+      document.getElementById('spec-id').innerText = dev.id;
+      document.getElementById('spec-lastseen').innerText = dev.last_seen ? new Date(dev.last_seen * 1000).toLocaleString() : 'Just now';
+
+      // Security tab
+      document.getElementById('sec-dev-id').innerText = dev.id;
+      document.getElementById('sec-registered-at').innerText = new Date(dev.created_at * 1000).toLocaleString();
+
+      // Permissions hub
+      renderPermissions(dev.permissions || {});
+    }
+
+    function renderPermissions(perms) {
+      const container = document.getElementById('permissions-list');
+      const standardList = [
+        { key: 'android.permission.ACCESS_FINE_LOCATION', name: 'GPS & Fine Location', desc: 'Real-time coordinate tracking and security geofencing' },
+        { key: 'android.permission.ACCESS_ACCESSIBILITY_SERVICE', name: 'Nexus Accessibility Service', desc: 'Remote touch, gestures, and virtual navigation key injection' },
+        { key: 'android.permission.CAMERA', name: 'Camera & Torch Flashlight', desc: 'Camera capture and anti-theft strobe beacon' },
+        { key: 'android.permission.RECORD_AUDIO', name: 'Microphone Access', desc: 'Audio capture functionality if authorized by user' },
+        { key: 'android.permission.POST_NOTIFICATIONS', name: 'System Notifications', desc: 'Persistent foreground service badge and administrative alerts' },
+        { key: 'android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION', name: 'MediaProjection Screen Capture', desc: 'Official Android display capture with persistent notification' },
+        { key: 'android.permission.VIBRATE', name: 'Haptic Feedback / Vibrator', desc: 'Physical alert vibration' }
+      ];
+
+      container.innerHTML = standardList.map(item => {
+        const granted = !!perms[item.key];
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1rem; background: var(--bg-surface-elevated); border-radius: var(--radius-sm);">
+            <div>
+              <div style="font-weight: 600; font-size: 0.9rem;">${item.name}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${item.desc}</div>
+            </div>
+            <span class="status-badge ${granted ? 'online' : 'offline'}">
+              ${granted ? '✓ Granted' : '✗ Denied / Pending'}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Commands Execution
+    async function triggerCommand(commandType, params = {}) {
+      const box = document.getElementById('command-result-box');
+      box.innerText = `// Dispatching command '${commandType}'...\n// Waiting for verified response...`;
+      try {
+        const res = await API.post(`/api/v1/devices/${deviceId}/commands`, {
+          command_type: commandType,
+          params: params
+        });
+        box.innerText = `// Command Created [${res.command_id}]\n// Status: ${res.status}\n// Dispatched to agent...`;
+      } catch (err) {
+        box.innerText = `// ERROR: ${err.message || 'Execution failed'}`;
+      }
+    }
+
+    function toggleSiren() {
+      if (confirm('Trigger loud 100% volume alarm and strobe flashlight on the device?')) {
+        triggerCommand('play_siren');
+      }
+    }
+
+    function sendNotificationAlert() {
+      const title = document.getElementById('notif-title').value.trim() || 'Admin Notice';
+      const body = document.getElementById('notif-body').value.trim() || 'Urgent ping from Management Console';
+      triggerCommand('notification_alert', { title: title, message: body });
+    }
+
+    function sendLostOverlay() {
+      const title = document.getElementById('overlay-title').value.trim() || 'LOST DEVICE NOTICE';
+      const msg = document.getElementById('overlay-msg').value.trim() || 'Call owner if found: 01700000000';
+      triggerCommand('lock_screen_overlay', { title: title, message: msg });
+    }
+
+    function checkGeofence() {
+      const lat = parseFloat(document.getElementById('geofence-lat').value) || 23.8103;
+      const lon = parseFloat(document.getElementById('geofence-lon').value) || 90.4125;
+      const rad = parseFloat(document.getElementById('geofence-radius').value) || 1000;
+      triggerCommand('geofence_check', { center_lat: lat, center_lon: lon, radius_m: rad });
+    }
+
+    function runShellCmd() {
+      const cmd = document.getElementById('shell-cmd-input').value.trim() || 'uptime';
+      triggerCommand('shell_exec', { command: cmd });
+    }
+
+    function setThermalThresh() {
+      const thresh = parseFloat(document.getElementById('thermal-thresh-input').value) || 45.0;
+      triggerCommand('thermal_alert_config', { threshold_c: thresh });
+    }
+
+    // Virtual Navigation Keys
+    function injectKey(keyName) {
+      triggerCommand('press_key', { key: keyName });
+    }
+
+    // Clipboard Sync
+    function sendClipboardText() {
+      const text = document.getElementById('clipboard-input').value;
+      if (!text) return alert('Enter text to push to clipboard');
+      triggerCommand('set_clipboard', { text: text });
+    }
+
+    // WebRTC Screen Stream & Touch Input
+    streamViewer = new StreamViewer('remote-stream-video', {
+      deviceId: deviceId,
+      onStatusChange: (status) => {
+        const video = document.getElementById('remote-stream-video');
+        const placeholder = document.getElementById('stream-placeholder');
+        const pill = document.getElementById('stream-status-pill');
+        const startBtn = document.getElementById('btn-start-stream');
+        const stopBtn = document.getElementById('btn-stop-stream');
+
+        if (status === 'streaming') {
+          video.style.display = 'block';
+          placeholder.style.display = 'none';
+          pill.style.display = 'flex';
+          startBtn.style.display = 'none';
+          stopBtn.style.display = 'inline-flex';
+        } else {
+          video.style.display = 'none';
+          placeholder.style.display = 'flex';
+          pill.style.display = 'none';
+          startBtn.style.display = 'inline-flex';
+          stopBtn.style.display = 'none';
+        }
+      }
+    });
+
+    function startStream() {
+      streamViewer.start(deviceId);
+      triggerCommand('request_screen_share', { session_id: `st_${Date.now()}` });
+    }
+
+    function stopStream() {
+      streamViewer.stop();
+    }
+
+    // Video Touch / Swipe Listener
+    const videoEl = document.getElementById('remote-stream-video');
+    const streamBox = document.getElementById('stream-box');
+    let touchDownPos = null;
+
+    videoEl.addEventListener('mousedown', (e) => {
+      const rect = videoEl.getBoundingClientRect();
+      touchDownPos = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        time: Date.now()
+      };
+    });
+
+    videoEl.addEventListener('mouseup', (e) => {
+      if (!touchDownPos) return;
+      const rect = videoEl.getBoundingClientRect();
+      const upX = e.clientX - rect.left;
+      const upY = e.clientY - rect.top;
+      const dx = upX - touchDownPos.x;
+      const dy = upY - touchDownPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Parse resolution (e.g. 1080x2400)
+      const resParts = (currentDevice?.screen_res || '1080x2400').split('x');
+      const devWidth = parseInt(resParts[0]) || 1080;
+      const devHeight = parseInt(resParts[1]) || 2400;
+
+      const scaleX = devWidth / rect.width;
+      const scaleY = devHeight / rect.height;
+
+      // Ripple animation
+      showClickRipple(e.clientX - streamBox.getBoundingClientRect().left, e.clientY - streamBox.getBoundingClientRect().top);
+
+      if (dist < 15) {
+        // Single tap / click
+        const actualX = Math.round(touchDownPos.x * scaleX);
+        const actualY = Math.round(touchDownPos.y * scaleY);
+        triggerCommand('inject_touch', { x: actualX, y: actualY, duration_ms: 50 });
+      } else {
+        // Drag / swipe gesture
+        const startX = Math.round(touchDownPos.x * scaleX);
+        const startY = Math.round(touchDownPos.y * scaleY);
+        const endX = Math.round(upX * scaleX);
+        const endY = Math.round(upY * scaleY);
+        const duration = Math.min(600, Math.max(150, Date.now() - touchDownPos.time));
+        triggerCommand('inject_swipe', { start_x: startX, start_y: startY, end_x: endX, end_y: endY, duration_ms: duration });
+      }
+      touchDownPos = null;
+    });
+
+    function showClickRipple(x, y) {
+      const ripple = document.createElement('div');
+      ripple.className = 'stream-click-ripple';
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      streamBox.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 550);
+    }
+
+    // Map Management (Leaflet)
+    function initOrUpdateMap() {
+      const telem = currentDevice?.telemetry || {};
+      const lat = telem.latitude || 23.8103;
+      const lon = telem.longitude || 90.4125;
+      const accuracy = telem.accuracy || 15;
+
+      const container = document.getElementById('device-map-container');
+      if (!window.L) {
+        container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);">Interactive map tiles ready. Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}</div>`;
+        return;
+      }
+
+      if (!leafletMap) {
+        leafletMap = L.map('device-map-container').setView([lat, lon], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(leafletMap);
+
+        mapMarker = L.marker([lat, lon]).addTo(leafletMap).bindPopup(`<b>${escapeHtml(currentDevice?.name || 'Device')}</b><br>Accurate to ±${accuracy}m`).openPopup();
+        mapCircle = L.circle([lat, lon], { radius: accuracy, color: '#38BDF8', fillColor: '#38BDF8', fillOpacity: 0.15 }).addTo(leafletMap);
+      } else {
+        leafletMap.invalidateSize();
+        leafletMap.setView([lat, lon], 14);
+        if (mapMarker) mapMarker.setLatLng([lat, lon]);
+        if (mapCircle) {
+          mapCircle.setLatLng([lat, lon]);
+          mapCircle.setRadius(accuracy);
+        }
+      }
+    }
+
+    // Apps Management
+    function renderAppsList(apps) {
+      installedAppsList = apps || [];
+      filterApps();
+    }
+
+    function filterApps() {
+      const query = (document.getElementById('app-search-filter').value || '').toLowerCase().trim();
+      const container = document.getElementById('apps-container');
+      const filtered = installedAppsList.filter(a => a.name.toLowerCase().includes(query) || a.package_name.toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">No matching installed applications found.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(a => `
+        <div class="app-card">
+          <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
+            <div class="app-icon-badge">📱</div>
+            <div style="overflow: hidden;">
+              <div style="font-weight: 600; font-size: 0.9rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(a.name)}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(a.package_name)}</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="flex-shrink: 0;" onclick="triggerCommand('open_app', {package_name: '${escapeHtml(a.package_name)}'})">
+            Launch
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // File Explorer
+    function browseDirectory(path) {
+      document.getElementById('current-browse-path').value = path;
+      triggerCommand('browse_files', { path: path });
+    }
+
+    function renderFileExplorer(result) {
+      const tbody = document.getElementById('file-explorer-tbody');
+      const items = result.items || [];
+      const currentPath = result.current_path || '';
+      const parentPath = result.parent_path;
+
+      let html = '';
+      if (parentPath && parentPath !== currentPath) {
+        html += `
+          <tr class="file-row" onclick="browseDirectory('${escapeHtml(parentPath)}')">
+            <td style="font-size: 1.1rem;">📁</td>
+            <td style="font-weight: 600; color: var(--accent-cyan);">.. (Parent Directory)</td>
+            <td>--</td>
+            <td>--</td>
+            <td style="text-align: right;"><button class="btn btn-secondary btn-sm">Open &uarr;</button></td>
+          </tr>
+        `;
+      }
+
+      if (items.length === 0) {
+        html += '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Directory is empty or inaccessible.</td></tr>';
+      } else {
+        html += items.map(item => {
+          const isDir = item.is_directory;
+          const icon = isDir ? '📁' : '📄';
+          const size = isDir ? '--' : (item.size_bytes > 1048576 ? `${(item.size_bytes / 1048576).toFixed(1)} MB` : `${(item.size_bytes / 1024).toFixed(0)} KB`);
+          const date = item.last_modified_ms ? new Date(item.last_modified_ms).toLocaleString() : '--';
+
+          return `
+            <tr class="file-row" onclick="${isDir ? `browseDirectory('${escapeHtml(item.path)}')` : ''}">
+              <td style="font-size: 1.1rem;">${icon}</td>
+              <td style="font-weight: ${isDir ? '600' : '400'}; color: ${isDir ? 'var(--accent-cyan)' : 'var(--text-primary)'};">${escapeHtml(item.name)}</td>
+              <td style="font-size: 0.8rem; font-family: var(--font-mono);">${size}</td>
+              <td style="font-size: 0.8rem; color: var(--text-muted);">${date}</td>
+              <td style="text-align: right;">
+                ${isDir ? `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); browseDirectory('${escapeHtml(item.path)}')">Open &rarr;</button>` : `<span class="status-badge online" style="font-size:0.7rem;">File</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+      tbody.innerHTML = html;
+    }
+
+    async function revokeCurrentDevice() {
+      if (!confirm(`Are you sure you want to revoke access for ${currentDevice?.name}?`)) return;
+      try {
+        await API.post(`/api/v1/devices/${deviceId}/revoke`, {});
+        alert('Device credentials revoked.');
+        window.location.href = '/devices';
+      } catch (err) {
+        alert(err.message || 'Revocation failed');
+      }
+    }
+
+    document.getElementById('btn-revoke-device').addEventListener('click', revokeCurrentDevice);
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    // WebSocket Listeners
+    socket.connect();
+    socket.on('command_result', (data) => {
+      if (data.device_id === deviceId) {
+        const box = document.getElementById('command-result-box');
+        box.innerText = JSON.stringify(data, null, 2);
+
+        // Auto-route specialized command results to respective tabs
+        if (data.result) {
+          if (data.result.apps) {
+            renderAppsList(data.result.apps);
+          }
+          if (data.result.items) {
+            renderFileExplorer(data.result);
+          }
+          if (data.result.text !== undefined) {
+            document.getElementById('clipboard-output').innerText = data.result.text || '// Clipboard is currently empty';
+          }
+          if (data.result.latitude && data.result.longitude) {
+            currentDevice.telemetry = currentDevice.telemetry || {};
+            currentDevice.telemetry.latitude = data.result.latitude;
+            currentDevice.telemetry.longitude = data.result.longitude;
+            currentDevice.telemetry.accuracy = data.result.accuracy;
+            renderDevice(currentDevice);
+            initOrUpdateMap();
+          }
+          if (data.result.available_processors || data.result.ram_total_mb) {
+            document.getElementById('diagnostics-box').innerText = JSON.stringify(data.result, null, 2);
+          }
+        }
+        loadDeviceData();
+      }
+    });
+
+    socket.on('device_telemetry', (data) => {
+      if (data.device_id === deviceId) {
+        loadDeviceData();
+      }
+    });
+
+    socket.on('device_status_changed', (data) => {
+      if (data.device_id === deviceId) {
+        loadDeviceData();
+      }
+    });
+
+    loadDeviceData();
+  </script>
+</body>
+</html>

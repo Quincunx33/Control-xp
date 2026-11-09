@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - NEXUS REMOTE</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">NEXUS REMOTE</div>
+          <span class="brand-badge">Secured</span>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a href="/devices">Devices</a></li>
+        <li class="nav-item"><a href="/sessions">Sessions</a></li>
+        <li class="nav-item active"><a href="/settings">Settings</a></li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="API.logout()">
+          Terminate Session
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="top-bar">
+        <h1 class="top-bar-title">Platform & Console Settings</h1>
+        <div class="top-bar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="checkHealth()">
+            ⚡ Test Uplink Health
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <!-- Operator Identity Card -->
+          <div class="metric-card">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Operator Account Profile</h3>
+            <div style="font-size: 0.875rem; color: var(--text-secondary); line-height: 2;">
+              <div><strong>Operator Name:</strong> <span id="set-name" style="color: var(--text-primary); font-weight: 600;">--</span></div>
+              <div><strong>Email Address:</strong> <span id="set-email" style="color: var(--text-primary); font-weight: 600;">--</span></div>
+              <div><strong>Session User ID:</strong> <span id="set-uid" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent-cyan);">--</span></div>
+              <div><strong>Authentication Mode:</strong> <span class="status-badge online">HMAC-SHA256 Token</span></div>
+            </div>
+          </div>
+
+          <!-- Server Connection Health -->
+          <div class="metric-card">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Backend Core Uplink</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+              Base REST & WebSocket Gateway endpoint configuration.
+            </p>
+            <div style="background: var(--bg-surface-elevated); padding: 0.85rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem; margin-bottom: 1rem;">
+              Endpoint: <span id="server-url" style="color: var(--accent-cyan);">--</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <button class="btn btn-primary btn-sm" onclick="checkHealth()">
+                Run Health & Latency Test
+              </button>
+              <span id="health-result" style="font-size: 0.85rem; font-weight: 600;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot Guard Engine Specs -->
+        <div class="metric-card" style="margin-bottom: 2rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Bot Guard Security Engine</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+            Pre-authentication defense layer inspecting client signatures, headers, rate limits, and brute-force mitigation.
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.85rem;">
+            <div style="background: var(--bg-surface-elevated); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">PROTECTION MODE</div>
+              <div style="font-weight: 600; color: var(--accent-emerald);">Active Strict Defense</div>
+            </div>
+            <div style="background: var(--bg-surface-elevated); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">ENGINE VERSION</div>
+              <div style="font-weight: 600;">bot-guard-py v0.7.0</div>
+            </div>
+            <div style="background: var(--bg-surface-elevated); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">BACKEND CORE</div>
+              <div style="font-weight: 600;">Limbo Pure Stdlib (Zero-dep)</div>
+            </div>
+            <div style="background: var(--bg-surface-elevated); padding: 1rem; border-radius: var(--radius-sm);">
+              <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 0.25rem;">DATABASE PERSISTENCE</div>
+              <div style="font-weight: 600; font-family: var(--font-mono);">SQLite WAL Mode</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    if (!API.isAuthenticated()) window.location.href = '/login';
+
+    const user = API.getUser();
+    if (user) {
+      document.getElementById('set-name').innerText = user.name;
+      document.getElementById('set-email').innerText = user.email;
+      document.getElementById('set-uid').innerText = user.id;
+    }
+    document.getElementById('server-url').innerText = API.getBaseUrl();
+
+    async function checkHealth() {
+      const resEl = document.getElementById('health-result');
+      resEl.innerText = 'Testing...';
+      try {
+        const start = performance.now();
+        const res = await API.get('/api/v1/health');
+        const duration = Math.round(performance.now() - start);
+        resEl.style.color = 'var(--accent-emerald)';
+        resEl.innerText = `✓ Healthy (${duration}ms) [${res.service}]`;
+      } catch (e) {
+        resEl.style.color = 'var(--accent-rose)';
+        resEl.innerText = `✗ Unreachable: ${e.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

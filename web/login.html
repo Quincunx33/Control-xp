@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operator Login - NEXUS REMOTE</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-icon" style="margin: 0 auto; width: 48px; height: 48px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+      </div>
+      <h1 class="auth-title">NEXUS REMOTE</h1>
+      <p class="auth-desc">Secure Management Console</p>
+    </div>
+
+    <div id="error-banner" class="error-banner"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="email">Operator Email</label>
+        <input class="form-input" type="email" id="email" required placeholder="operator@nexus.local" autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Security Password</label>
+        <input class="form-input" type="password" id="password" required placeholder="••••••••••••">
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="login-btn">
+        Authenticate Session
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+      Need a new console account? <a href="/register">Register here</a>
+    </div>
+
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+      <span>Bot Guard Active</span>
+      <span>Limbo v1.0 • E2E Secured</span>
+    </div>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    if (API.isAuthenticated()) {
+      window.location.href = '/dashboard';
+    }
+
+    const form = document.getElementById('login-form');
+    const errBanner = document.getElementById('error-banner');
+    const btn = document.getElementById('login-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errBanner.classList.remove('active');
+      btn.disabled = true;
+      btn.innerText = 'Verifying...';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await API.post('/api/v1/auth/login', { email, password });
+        API.setToken(res.token);
+        API.setUser(res.user);
+        window.location.href = '/dashboard';
+      } catch (err) {
+        errBanner.innerText = err.message || 'Authentication failed';
+        errBanner.classList.add('active');
+        btn.disabled = false;
+        btn.innerText = 'Authenticate Session';
+      }
+    });
+  </script>
+</body>
+</html>

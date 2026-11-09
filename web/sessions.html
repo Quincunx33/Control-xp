@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sessions - NEXUS REMOTE</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">NEXUS REMOTE</div>
+          <span class="brand-badge">Secured</span>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="nav-item"><a href="/devices">Devices</a></li>
+        <li class="nav-item active"><a href="/sessions">Sessions</a></li>
+        <li class="nav-item"><a href="/settings">Settings</a></li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="API.logout()">
+          Terminate Session
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="top-bar">
+        <h1 class="top-bar-title">Active Security Sessions</h1>
+      </header>
+
+      <div class="content-body">
+        <div class="metric-card" style="margin-bottom: 2rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Console Login Sessions</h3>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+            Sessions are validated by cryptographic HMAC-SHA256 signatures with server-side revocation.
+          </p>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Session ID</th>
+                  <th>Client / Device</th>
+                  <th>Created At</th>
+                  <th>Expires At</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="sessions-tbody">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading sessions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    if (!API.isAuthenticated()) window.location.href = '/login';
+
+    async function loadSessions() {
+      try {
+        const res = await API.get('/api/v1/auth/sessions');
+        const tbody = document.getElementById('sessions-tbody');
+        const sessions = res.sessions || [];
+
+        if (sessions.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No active sessions found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = sessions.map(s => `
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;">${s.id}</td>
+            <td>${escapeHtml(s.device_info || 'Browser Console')}</td>
+            <td style="font-size: 0.8rem;">${new Date(s.created_at * 1000).toLocaleString()}</td>
+            <td style="font-size: 0.8rem;">${new Date(s.expires_at * 1000).toLocaleString()}</td>
+            <td><span class="status-badge ${s.revoked ? 'revoked' : 'online'}">${s.revoked ? 'REVOKED' : 'ACTIVE'}</span></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    loadSessions();
+  </script>
+</body>
+</html>
