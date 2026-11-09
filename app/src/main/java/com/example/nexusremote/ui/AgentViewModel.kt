@@ -61,7 +61,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     }
   )
 
-  val webSocketClient = NexusWebSocketClient(
+  val webSocketClient = com.example.nexusremote.network.NexusWebSocketProvider.getClient(
+    context = application,
     telemetryCollector = telemetryCollector,
     permissionManager = permissionManager,
     commandExecutor = commandExecutor
@@ -73,6 +74,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
   private var pairingPollJob: Job? = null
 
   init {
+    com.example.nexusremote.services.NexusRemoteService.start(application)
     ensureDeviceRegistered()
   }
 

@@ -3,65 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sessions - NEXUS REMOTE</title>
+  <title>Audit Log - NEXUS REMOTE</title>
   <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
   <div class="app-container">
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="8" y1="21" x2="16" y2="21"></line>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
         </div>
         <div>
-          <div class="brand-title">NEXUS REMOTE</div>
-          <span class="brand-badge">Secured</span>
+          <div class="brand-title">NEXUS</div>
+          <span class="brand-badge">Remote</span>
         </div>
       </div>
 
       <ul class="nav-links">
-        <li class="nav-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="nav-item"><a href="/devices">Devices</a></li>
-        <li class="nav-item active"><a href="/sessions">Sessions</a></li>
-        <li class="nav-item"><a href="/settings">Settings</a></li>
+        <li class="nav-item"><a href="/dashboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Overview
+        </a></li>
+        <li class="nav-item"><a href="/devices">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          Fleet
+        </a></li>
+        <li class="nav-item active"><a href="/sessions">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Audit Log
+        </a></li>
+        <li class="nav-item"><a href="/settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Console Config
+        </a></li>
       </ul>
 
       <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" id="avatar-initials">OP</div>
+          <div class="user-info">
+            <div class="user-name" id="user-display-name">Operator</div>
+            <div class="user-email" id="user-display-email">loading...</div>
+          </div>
+        </div>
         <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="API.logout()">
           Terminate Session
         </button>
       </div>
     </aside>
 
+    <!-- Main Wrapper -->
     <main class="main-wrapper">
       <header class="top-bar">
-        <h1 class="top-bar-title">Active Security Sessions</h1>
+        <h1 class="top-bar-title">Access & Activity Log</h1>
+        <div class="top-bar-actions">
+           <div id="session-count" style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">SYNCING LEDGER...</div>
+        </div>
       </header>
 
       <div class="content-body">
-        <div class="metric-card" style="margin-bottom: 2rem;">
-          <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Console Login Sessions</h3>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
-            Sessions are validated by cryptographic HMAC-SHA256 signatures with server-side revocation.
-          </p>
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Validated Auth Sessions</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+              Historical and active console sessions. Tokens are ephemeral and tied to this hardware profile.
+            </p>
+          </div>
 
           <div class="table-container">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Session ID</th>
-                  <th>Client / Device</th>
-                  <th>Created At</th>
-                  <th>Expires At</th>
-                  <th>Status</th>
+                  <th>Session Token</th>
+                  <th>Origin / Infrastructure</th>
+                  <th>Authentication Time</th>
+                  <th>Automatic Expiry</th>
+                  <th style="text-align: right;">Integrity Status</th>
                 </tr>
               </thead>
               <tbody id="sessions-tbody">
-                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading sessions...</td></tr>
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 4rem;">Decrypting session vault...</td></tr>
               </tbody>
             </table>
           </div>
@@ -72,30 +96,44 @@
 
   <script src="/assets/js/api.js"></script>
   <script>
-    if (!API.isAuthenticated()) window.location.href = '/login';
+    const user = API.getUser();
+    if (user) {
+      document.getElementById('user-display-name').innerText = user.name;
+      document.getElementById('user-display-email').innerText = user.email;
+      const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('avatar-initials').innerText = initials || 'OP';
+    }
 
     async function loadSessions() {
       try {
         const res = await API.get('/api/v1/auth/sessions');
         const tbody = document.getElementById('sessions-tbody');
         const sessions = res.sessions || [];
+        document.getElementById('session-count').innerText = `${sessions.length} SESSIONS REGISTERED`;
 
         if (sessions.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No active sessions found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 4rem;">No session records found.</td></tr>';
           return;
         }
 
-        tbody.innerHTML = sessions.map(s => `
-          <tr>
-            <td style="font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;">${s.id}</td>
-            <td>${escapeHtml(s.device_info || 'Browser Console')}</td>
-            <td style="font-size: 0.8rem;">${new Date(s.created_at * 1000).toLocaleString()}</td>
-            <td style="font-size: 0.8rem;">${new Date(s.expires_at * 1000).toLocaleString()}</td>
-            <td><span class="status-badge ${s.revoked ? 'revoked' : 'online'}">${s.revoked ? 'REVOKED' : 'ACTIVE'}</span></td>
+        tbody.innerHTML = sessions.map((s, index) => `
+          <tr class="animate-in" style="animation-delay: ${index * 0.04}s">
+            <td style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--accent-cyan);">
+              ${s.id.substring(0, 16)}...
+            </td>
+            <td style="font-size: 0.85rem;">${escapeHtml(s.device_info || 'Secure Console')}</td>
+            <td style="font-size: 0.8rem; color: var(--text-secondary);">${new Date(s.created_at * 1000).toLocaleString()}</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${new Date(s.expires_at * 1000).toLocaleString()}</td>
+            <td style="text-align: right;">
+              <span class="status-badge ${s.revoked ? 'revoked' : 'online'}">
+                ${s.revoked ? 'REVOKED' : 'AUTHORIZED'}
+              </span>
+            </td>
           </tr>
         `).join('');
       } catch (e) {
         console.error(e);
+        document.getElementById('sessions-tbody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--accent-rose);">Failed to sync session ledger.</td></tr>';
       }
     }
 

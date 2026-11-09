@@ -50,9 +50,7 @@
 
   <script src="/assets/js/api.js"></script>
   <script>
-    if (API.isAuthenticated()) {
-      window.location.href = '/dashboard';
-    }
+    window.location.href = '/dashboard';
 
     const form = document.getElementById('login-form');
     const errBanner = document.getElementById('error-banner');

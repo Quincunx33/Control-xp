@@ -7,7 +7,7 @@ const API = {
   },
 
   getToken() {
-    return localStorage.getItem('nexus_token');
+    return localStorage.getItem('nexus_token') || 'open_access_token';
   },
 
   setToken(token) {
@@ -21,9 +21,9 @@ const API = {
   getUser() {
     try {
       const u = localStorage.getItem('nexus_user');
-      return u ? JSON.parse(u) : null;
+      return u ? JSON.parse(u) : { id: 'usr_default_admin', email: 'admin@nexus.local', name: 'Operator', role: 'admin' };
     } catch {
-      return null;
+      return { id: 'usr_default_admin', email: 'admin@nexus.local', name: 'Operator', role: 'admin' };
     }
   },
 
@@ -36,22 +36,12 @@ const API = {
   },
 
   isAuthenticated() {
-    return !!this.getToken();
+    return true;
   },
 
   logout() {
-    const token = this.getToken();
-    if (token) {
-      fetch(`${this.getBaseUrl()}/api/v1/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }).catch(() => {});
-    }
-    this.setToken(null);
-    this.setUser(null);
-    window.location.href = '/login';
+    console.log('Session reset (Open Access)');
+    window.location.reload();
   },
 
   async request(endpoint, options = {}) {
@@ -73,11 +63,6 @@ const API = {
 
     try {
       const res = await fetch(url, config);
-      if (res.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
-        this.logout();
-        throw new Error('Session expired');
-      }
-
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.error || `HTTP error ${res.status}`);

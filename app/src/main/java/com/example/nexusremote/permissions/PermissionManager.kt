@@ -93,7 +93,44 @@ class PermissionManager(private val context: Context) {
       )
     )
 
+    // 8. Battery Optimizations
+    items.add(
+      DevicePermissionItem(
+        permission = "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS",
+        name = "Unrestricted Battery Usage",
+        description = "Prevents Android from putting the background connection to sleep during idle periods.",
+        isGranted = isIgnoringBatteryOptimizations()
+      )
+    )
+
     return items
+  }
+
+  fun isIgnoringBatteryOptimizations(): Boolean {
+    val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      pm.isIgnoringBatteryOptimizations(context.packageName)
+    } else {
+      true
+    }
+  }
+
+  fun requestIgnoreBatteryOptimizations() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = Uri.parse("package:${context.packageName}")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      }
+      try {
+        context.startActivity(intent)
+      } catch (_: Exception) {
+        // Fallback to settings page
+        val altIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(altIntent)
+      }
+    }
   }
 
   fun isGranted(permission: String): Boolean {

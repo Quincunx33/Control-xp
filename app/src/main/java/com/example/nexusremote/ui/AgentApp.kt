@@ -320,6 +320,9 @@ fun AgentApp(viewModel: AgentViewModel) {
             if (ungranted.isNotEmpty()) {
               requestPermissionsLauncher.launch(ungranted)
             }
+          },
+          onDisableBatteryRestrictions = {
+            viewModel.permissionManager.requestIgnoreBatteryOptimizations()
           }
         )
         2 -> SettingsTab(
@@ -344,6 +347,7 @@ fun DashboardTab(
   val devStatus = viewModel.sessionManager.deviceStatus
   val ungrantedRuntime = remember(telemetry) { viewModel.permissionManager.getRequiredRuntimePermissions() }
   val isAccessibilityEnabled = remember(telemetry) { viewModel.permissionManager.isAccessibilityServiceEnabled() }
+  val isBatteryOptimized = remember(telemetry) { !viewModel.permissionManager.isIgnoringBatteryOptimizations() }
 
   LazyColumn(
     modifier = Modifier.fillMaxSize(),
@@ -351,7 +355,7 @@ fun DashboardTab(
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
     // 0. Permission Warning Banner if any permission missing
-    if (ungrantedRuntime.isNotEmpty() || !isAccessibilityEnabled) {
+    if (ungrantedRuntime.isNotEmpty() || !isAccessibilityEnabled || isBatteryOptimized) {
       item {
         Card(
           shape = RoundedCornerShape(12.dp),
@@ -362,11 +366,11 @@ fun DashboardTab(
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(Icons.Default.Warning, contentDescription = null, tint = NexusAmber, modifier = Modifier.size(20.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("Permissions Action Required", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
+              Text("Background Action Required", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-              "Grant runtime permissions (GPS location, Notifications, Camera) and enable Nexus Accessibility Service to allow remote touch control.",
+              "App needs unrestricted battery usage and touch control permissions to remain stable and functional in the background.",
               fontSize = 12.sp,
               color = Color.LightGray
             )
@@ -378,7 +382,16 @@ fun DashboardTab(
                   colors = ButtonDefaults.buttonColors(containerColor = NexusAmber),
                   modifier = Modifier.weight(1f).testTag("grant_runtime_perms_btn")
                 ) {
-                  Text("Grant Permissions", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                  Text("Grant Perms", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+              }
+              if (isBatteryOptimized) {
+                Button(
+                  onClick = { viewModel.permissionManager.requestIgnoreBatteryOptimizations() },
+                  colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
+                  modifier = Modifier.weight(1f)
+                ) {
+                  Text("Unrestrict Battery", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
               }
               if (!isAccessibilityEnabled) {
@@ -386,7 +399,7 @@ fun DashboardTab(
                   onClick = onOpenAccessibility,
                   modifier = Modifier.weight(1f).testTag("enable_accessibility_btn")
                 ) {
-                  Text("Enable Touch Control", color = NexusCyan, fontSize = 11.sp)
+                  Text("Touch Ctrl", color = NexusCyan, fontSize = 10.sp)
                 }
               }
             }
@@ -584,7 +597,8 @@ fun PermissionsTab(
   permissions: List<DevicePermissionItem>,
   onOpenSettings: () -> Unit,
   onOpenAccessibility: () -> Unit,
-  onRequestPermissions: () -> Unit
+  onRequestPermissions: () -> Unit,
+  onDisableBatteryRestrictions: () -> Unit
 ) {
   val total = permissions.size
   val grantedCount = permissions.count { it.isGranted }
@@ -762,6 +776,14 @@ fun PermissionsTab(
                 modifier = Modifier.fillMaxWidth()
               ) {
                 Text("Enable Nexus Accessibility Service", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+              }
+            } else if (perm.permission == "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS") {
+              Button(
+                onClick = onDisableBatteryRestrictions,
+                colors = ButtonDefaults.buttonColors(containerColor = NexusAmber),
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("Disable Battery Restrictions", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.sp)
               }
             } else {
               Button(
