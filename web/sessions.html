@@ -132,8 +132,9 @@
           </tr>
         `).join('');
       } catch (e) {
-        console.error(e);
-        document.getElementById('sessions-tbody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--accent-rose);">Failed to sync session ledger.</td></tr>';
+        AppLogger.error('Session list failed to load', { status: e.status || 0, code: e.code || 'UNKNOWN' });
+        document.getElementById('sessions-tbody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--accent-rose);">Could not load sessions. Check your connection and try again.</td></tr>';
+        AppFeedback.error(e.message || 'Could not load sessions. Please try again.');
       }
     }
 

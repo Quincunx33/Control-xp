@@ -121,7 +121,9 @@
         document.getElementById('fleet-count').innerText = `${allDevices.length} NODES DISCOVERED`;
         filterDevices();
       } catch (e) {
-        console.error(e);
+        AppLogger.error('Device list failed to load', { status: e.status || 0, code: e.code || 'UNKNOWN' });
+        document.getElementById('devices-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--accent-rose);padding:2rem;">Could not load devices. Check your connection and try again.</td></tr>';
+        AppFeedback.error(e.message || 'Could not load devices. Please try again.');
       }
     }
 
@@ -181,9 +183,11 @@
       if (!confirm(`Are you sure you want to permanently revoke credentials for node ${id}?`)) return;
       try {
         await API.post(`/api/v1/devices/${id}/revoke`, {});
+        AppFeedback.success('Device access has been revoked.');
         loadDevices();
       } catch (err) {
-        alert(err.message || 'Failed to revoke device');
+        AppLogger.error('Device revoke failed', { status: err.status || 0, code: err.code || 'UNKNOWN' });
+        AppFeedback.error(err.message || 'Could not revoke this device. Please try again.');
       }
     }
 

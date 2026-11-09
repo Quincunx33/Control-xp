@@ -60,10 +60,7 @@
       <header class="top-bar">
         <h1 class="top-bar-title">Mission Overview</h1>
         <div class="top-bar-actions">
-          <div id="ws-badge" class="live-badge connecting">
-            <span class="pulse-dot"></span>
-            <span id="ws-badge-text">Connecting...</span>
-          </div>
+          <span id="live-indicator" class="connection-indicator connecting" role="status" aria-label="Live updates connecting" title="Live updates: connecting"></span>
           <button class="btn btn-primary btn-sm" onclick="openPairModal()">
             + Pair Device
           </button>
@@ -226,18 +223,12 @@
       document.getElementById('avatar-initials').innerText = initials || 'OP';
     }
 
-    // WebSocket Status Badge
     socket.onStatusChange((status) => {
-      const badge = document.getElementById('ws-badge');
-      const text = document.getElementById('ws-badge-text');
-      badge.className = `live-badge ${status}`;
-      if (status === 'online') {
-        text.innerText = 'WebSocket Live';
-      } else if (status === 'connecting') {
-        text.innerText = 'Connecting...';
-      } else {
-        text.innerText = 'Offline';
-      }
+      const indicator = document.getElementById('live-indicator');
+      const state = status === 'online' ? 'connected' : status === 'reconnecting' ? 'reconnecting' : status === 'connecting' ? 'connecting' : 'offline';
+      indicator.className = `connection-indicator ${status}`;
+      indicator.setAttribute('aria-label', `Live updates ${state}`);
+      indicator.title = `Live updates: ${state}`;
     });
 
     socket.connect();
@@ -265,7 +256,8 @@
         applyFleetFilter();
         renderAuditTable(auditRes.audit_logs || []);
       } catch (e) {
-        console.error('Error loading dashboard:', e);
+        AppLogger.error('Dashboard data failed to load', { status: e.status || 0, code: e.code || 'UNKNOWN' });
+        AppFeedback.error(e.message || 'Dashboard data could not be loaded. Check your connection and try again.');
       }
     }
 
@@ -437,9 +429,10 @@
           command_type: 'sync_status',
           params: {}
         });
-        alert('Telemetry sync dispatched!');
+        AppFeedback.success('Sync request sent. The device will update when it is available.');
       } catch (e) {
-        alert(e.message || 'Sync failed');
+        AppLogger.error('Device sync request failed', { status: e.status || 0, code: e.code || 'UNKNOWN' });
+        AppFeedback.error(e.message || 'Could not request a device sync. Please try again.');
       }
     }
 

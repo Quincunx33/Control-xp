@@ -119,6 +119,10 @@
               <div id="health-result-container" style="display: none; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; text-align: center;">
                 <span id="health-result"></span>
               </div>
+              <div>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="copySupportLog()">Copy recent support log</button>
+                <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.75rem; text-align: center;">Recent UI diagnostics only. Passwords and session tokens are not included.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -193,7 +197,30 @@
       } catch (e) {
         resContainer.style.background = 'rgba(244, 63, 94, 0.1)';
         resEl.style.color = 'var(--accent-rose)';
-        resEl.innerText = `CRITICAL UPLINK FAILURE: ${e.message}`;
+        resEl.innerText = `Connection check failed: ${e.message || 'Please check your connection and try again.'}`;
+        AppLogger.error('Health check failed', { status: e.status || 0, code: e.code || 'UNKNOWN' });
+      }
+    }
+
+    async function copySupportLog() {
+      try {
+        const logText = JSON.stringify(AppLogger.recent(), null, 2);
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(logText);
+        } else {
+          const field = document.createElement('textarea');
+          field.value = logText;
+          field.style.position = 'fixed';
+          field.style.opacity = '0';
+          document.body.appendChild(field);
+          field.select();
+          const copied = document.execCommand('copy');
+          field.remove();
+          if (!copied) throw new Error('Clipboard copy unavailable');
+        }
+        AppFeedback.success('Recent support log copied. You can paste it into a support message.');
+      } catch {
+        AppFeedback.error('Could not copy the support log. Check clipboard permissions and try again.');
       }
     }
   </script>

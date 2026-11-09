@@ -624,7 +624,7 @@
     const deviceId = urlParams.get('id');
 
     if (!deviceId) {
-      alert('Device ID required');
+      AppFeedback.error('Choose a device first. Returning to the device list.');
       window.location.href = '/devices';
     }
 
@@ -656,7 +656,8 @@
         currentDevice = res.device;
         renderDevice(currentDevice);
       } catch (err) {
-        alert(err.message || 'Failed to load device details');
+        AppLogger.error('Device details failed to load', { status: err.status || 0, code: err.code || 'UNKNOWN' });
+        AppFeedback.error(err.message || 'Could not load device details. Please try again.');
         window.location.href = '/devices';
       }
     }
@@ -759,6 +760,8 @@
         box.innerText = `// Command Created [${res.command_id}]\n// Status: ${res.status}\n// Dispatched to agent...`;
       } catch (err) {
         box.innerText = `// ERROR: ${err.message || 'Execution failed'}`;
+        AppLogger.error('Device command request failed', { commandType, status: err.status || 0, code: err.code || 'UNKNOWN' });
+        AppFeedback.error(err.message || 'The command could not be sent. Please try again.');
       }
     }
 
@@ -805,7 +808,7 @@
     // Clipboard Sync
     function sendClipboardText() {
       const text = document.getElementById('clipboard-input').value;
-      if (!text) return alert('Enter text to push to clipboard');
+      if (!text) return AppFeedback.warning('Enter text before sending it to the device.');
       triggerCommand('set_clipboard', { text: text });
     }
 
@@ -1023,10 +1026,11 @@
       if (!confirm(`Are you sure you want to revoke access for ${currentDevice?.name}?`)) return;
       try {
         await API.post(`/api/v1/devices/${deviceId}/revoke`, {});
-        alert('Device credentials revoked.');
+        AppFeedback.success('Device access has been revoked.');
         window.location.href = '/devices';
       } catch (err) {
-        alert(err.message || 'Revocation failed');
+        AppLogger.error('Device revoke failed', { status: err.status || 0, code: err.code || 'UNKNOWN' });
+        AppFeedback.error(err.message || 'Could not revoke this device. Please try again.');
       }
     }
 
