@@ -59,3 +59,48 @@
 - [x] Nginx reverse proxy configuration (`scripts/nginx_reverse_proxy.conf`).
 - [x] Startup runner script (`scripts/start_backend.sh`).
 - [x] Master README and architectural guides.
+
+
+---
+
+# Next Product Direction — Official Cloud Service & Advanced Remote Administration
+
+The next major stage is not a self-hosting product for ordinary users. The project is intended to become an official online service operated by the NEXUS REMOTE team.
+
+## Phase 10 — Official Website & Hosted Backend [PLANNED]
+- [ ] Launch the official NEXUS REMOTE website and service domain.
+- [ ] Deploy the Python backend on infrastructure operated by the project team.
+- [ ] Configure production HTTPS, secure secrets, persistent database storage, backups and monitoring.
+- [ ] Operate authenticated WebSocket connections for online devices.
+- [ ] Add service health monitoring, logging, rate limits and incident recovery.
+- [ ] Make the official service the default backend endpoint in production Android builds.
+- [ ] Keep local/self-hosted deployment as a developer or advanced-user option, not a requirement for normal users.
+
+## Phase 11 — Standalone Android Onboarding [PLANNED]
+- [ ] Registration directly inside the Android application.
+- [ ] Login, logout, session renewal and account recovery flows.
+- [ ] Device pairing and device management entirely from the Android app.
+- [ ] Connect to the official hosted backend without asking users to configure a server.
+- [ ] Keep the website/dashboard optional for browser-based administration.
+
+## Phase 12 — Advanced Remote Administration Toolset [PLANNED]
+Build a comprehensive remote-support and device-administration system for devices that are owned by, or explicitly enrolled with permission from, the account holder.
+
+- [ ] Expand the command registry with clearly documented, individually authorized actions.
+- [ ] Remote screen viewing using Android's official MediaProjection consent flow.
+- [ ] User-approved file transfer with integrity verification and clear transfer status.
+- [ ] Device telemetry: battery, storage, network and connection state.
+- [ ] Remote support actions where supported by Android APIs and granted permissions.
+- [ ] Device-side permission overview, active-session indicator and an immediate stop/revoke control.
+- [ ] Server-side audit history for account logins, device pairing and remote actions.
+- [ ] Per-device access policies, session expiry and revocation.
+- [ ] Compatibility handling for Android versions, manufacturer restrictions and background-execution limits.
+
+**Safety and platform boundary:** This is intended to be a transparent remote administration/assistance tool for authorized devices. It will not include stealth installation, hidden surveillance, permission bypass, credential theft, or persistence designed to evade the device owner. Android system consent and security restrictions must be respected.
+
+## Phase 13 — App Release & Updates [PLANNED]
+- [ ] Version and release management for Android builds.
+- [ ] In-app update availability notifications.
+- [ ] Signed releases, published release notes and compatibility information.
+- [ ] Safe update through an official distribution channel or user-confirmed installation.
+
