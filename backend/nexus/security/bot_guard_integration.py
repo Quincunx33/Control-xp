@@ -1,13 +1,6 @@
 """Native Bot Guard pre-authentication security middleware for Limbo."""
 from __future__ import annotations
-import sys
-from pathlib import Path
 from typing import Callable, Optional
-
-# Ensure vendored framework is accessible
-_framework_dir = Path(__file__).resolve().parent.parent.parent / "framework"
-if str(_framework_dir) not in sys.path:
-    sys.path.insert(0, str(_framework_dir))
 
 from bot_guard.detector import BotGuard
 from bot_guard.models import ALLOW, BLOCK, CHALLENGE, MONITOR, RATE_LIMIT, BotResult

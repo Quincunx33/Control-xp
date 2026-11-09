@@ -9,7 +9,6 @@ from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_DIR))
-sys.path.insert(0, str(BACKEND_DIR / "framework"))
 
 # Use a clean temporary database for tests
 _test_db = tempfile.NamedTemporaryFile(suffix=".db", delete=False)

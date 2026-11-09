@@ -4,13 +4,6 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import sys
-from pathlib import Path
-
-# Add backend directory and vendored framework to path
-CURRENT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(CURRENT_DIR))
-sys.path.insert(0, str(CURRENT_DIR / "framework"))
 
 from nexus.config import HOST, PORT
 from nexus.app import create_app

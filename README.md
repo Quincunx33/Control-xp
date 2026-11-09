@@ -9,11 +9,11 @@
 
 - 📱 **Native Android Agent**: Built with modern Kotlin, Jetpack Compose, and MVVM architecture. Captures real hardware battery, temperature, storage, and network telemetry without mock data.
 - 💻 **Zero-Framework Web Dashboard**: Pure Vanilla HTML5, modern CSS, and ES6 JavaScript. No React, Vue, or heavy node dependencies required.
-- 🛡️ **Limbo Backend with Bot Guard Security**: Pure Python standard-library backend utilizing the Limbo framework and pre-auth `bot-guard-py` detection, IP rate limiting, and trusted proxy verification.
+- 🛡️ **Limbo Backend with Bot Guard Security**: Python backend using the separately maintained Limbo and `bot-guard-py` packages, with pre-auth request inspection, IP rate limiting, and trusted proxy verification.
 - 🔒 **Secure Device Pairing**: Short-lived 6-character pairing codes with mandatory explicit on-device user confirmation before access is granted.
 - 📡 **Real-Time WebSocket & WebRTC**: Authenticated WebSocket gateway for live presence, telemetry streaming, strict command delivery, and WebRTC screen sharing signaling.
 - 🎥 **MediaProjection Screen Sharing**: Android system consent workflow with persistent foreground service notification (`ScreenCaptureService`) and one-tap stop controls.
-- ⚡ **Zero-Dependency Core**: Limbo server and Bot Guard operate with zero external pip dependencies.
+- 📦 **Pinned Python Dependencies**: Limbo and Bot Guard are installed from their upstream GitHub repositories at pinned commits via `requirements.txt`.
 
 ---
 
@@ -65,8 +65,11 @@
 
 ## 🚀 Quick Start
 
-### 1. Launch Limbo Backend
+### 1. Install Backend Dependencies & Launch
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 # Run database migrations and start server on port 8000
 bash scripts/start_backend.sh
 ```
@@ -91,6 +94,7 @@ Launch on your Android device or emulator. The default server address points to 
 
 ### Backend Test Suite (10/10 Passing)
 ```bash
+source .venv/bin/activate
 python3 backend/tests/test_backend.py
 ```
 Validates password hashing, token expiration, user registration/login, device registration, pairing state transitions, command execution, Bot Guard scoring, and trusted proxy extraction.

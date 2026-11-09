@@ -1,0 +1,3 @@
+# Keep these upstream Git dependencies pinned to exact commits for reproducible installs.
+limbo33 @ git+https://github.com/Quincunx33/limbo.git@964cbc635daf0ae890be28b538d61838532cac7b
+bot-guard-py @ git+https://github.com/Quincunx33/bot-guard-py.git@b7f7d87fe50c29af64c62c7d9ce5ea0a403445bd

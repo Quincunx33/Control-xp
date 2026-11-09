@@ -60,8 +60,8 @@ NEXUS REMOTE is a secure, production-grade remote Android device management plat
 - **Device Pairing**: 6-character short-lived pairing workflow with explicit user confirmation before association.
 
 ### 2.2 Limbo Backend Server (`backend/`)
-- **Limbo Framework**: Pure standard-library Python web framework (zero external pip runtime dependencies).
-- **Bot Guard Integration**: Pre-auth request inspection, score thresholding, brute-force rate limiting, and trusted proxy header resolution.
+- **Limbo Framework**: The `limbo33` package, installed from a pinned upstream GitHub commit; its runtime uses the Python standard library.
+- **Bot Guard Integration**: The `bot-guard-py` package, installed from a pinned upstream GitHub commit; provides pre-auth request inspection alongside app-level rate limiting and trusted proxy resolution.
 - **SQLite with WAL**: Thread-safe database with automated versioned migrations (`schema_migrations`).
 - **Cryptographic Security**: PBKDF2-HMAC-SHA256 password hashing (200,000 iterations) and HMAC-SHA256 session tokens.
 - **WebSocket Gateway**: Authenticates both Android agents and web dashboard clients; multiplexes presence, commands, telemetry, and WebRTC signaling.

@@ -3,6 +3,7 @@
 ## 1. Prerequisites
 - Linux VPS (Ubuntu 22.04 LTS or Debian 12 recommended)
 - Python 3.10+
+- Git (for the pinned GitHub package sources in `requirements.txt`)
 - Nginx or Cloudflare Reverse Proxy
 - Domain name with SSL certificates (Let's Encrypt / Certbot)
 
@@ -29,6 +30,10 @@ Set `NEXUS_SECRET_KEY=<generated_key>`.
 
 ### Step 3: Run Migrations & Start Server
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 bash scripts/start_backend.sh
 ```
 
@@ -43,7 +48,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/nexus-remote
-ExecStart=/usr/bin/python3 /opt/nexus-remote/backend/server.py --host 127.0.0.1 --port 8000
+ExecStart=/opt/nexus-remote/.venv/bin/python /opt/nexus-remote/backend/server.py --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
 EnvironmentFile=/opt/nexus-remote/.env

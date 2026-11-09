@@ -3,14 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
-from pathlib import Path
 from typing import Any
-
-# Ensure vendored framework is accessible
-_framework_dir = Path(__file__).resolve().parent.parent / "framework"
-if str(_framework_dir) not in sys.path:
-    sys.path.insert(0, str(_framework_dir))
 
 from limbo.app import Limbo
 from limbo.http import Request, Response

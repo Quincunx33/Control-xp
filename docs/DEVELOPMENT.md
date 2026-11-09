@@ -3,6 +3,7 @@
 ## 1. Project Directory Structure
 ```
 nexus-remote/
+├── requirements.txt            # Pinned Limbo and Bot Guard Git dependencies
 ├── app/                        # Android Native Agent (Kotlin, Compose)
 │   ├── src/main/java/com/example/
 │   │   ├── MainActivity.kt
@@ -17,7 +18,6 @@ nexus-remote/
 │   │       └── ui/             # Jetpack Compose MVVM UI & ViewModels
 │   └── src/test/java/com/example/  # Robolectric & JUnit test suite
 ├── backend/                    # Self-hostable Limbo + Bot Guard backend
-│   ├── framework/              # Vendored Limbo and Bot Guard cores
 │   ├── nexus/                  # Backend application modules
 │   │   ├── app.py              # Main Limbo application & route mount
 │   │   ├── config.py           # Environment settings & secrets
@@ -51,12 +51,16 @@ nexus-remote/
 
 ## 2. Running the Backend Locally
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 python3 backend/server.py --port 8000
 ```
 Visit `http://localhost:8000/` in your browser.
 
 ## 3. Running Backend Tests
 ```bash
+source .venv/bin/activate
 python3 backend/tests/test_backend.py
 ```
 
