@@ -262,16 +262,3 @@ If you report a bug, please include:
 <sub>Built for transparent, permission-based Android device management.</sub>
 
 </div>
-
-
-## How Kotlin, the website and HTML exchange data
-
-The Android app and website are separate clients. Kotlin does not need to rewrite the website HTML to update device information.
-
-- **Kotlin Android client:** sends authenticated HTTPS requests with JSON and receives JSON responses.
-- **Website client:** HTML defines page structure, CSS styles it, and Vanilla JavaScript updates the page using backend data.
-- **Live updates:** authenticated WebSocket messages carry device presence, telemetry, command status and other events.
-- **Single source of truth:** the backend validates requests, checks permissions, stores approved changes and broadcasts updates.
-- **Optional WebView:** if a future Android screen embeds a web page, a narrow JavaScript bridge can pass validated JSON messages between Kotlin and JavaScript. The current app uses native Compose, so this bridge is not required.
-
-See [DATA_FLOW.md](docs/DATA_FLOW.md) for request/response examples, event flow and security rules.
