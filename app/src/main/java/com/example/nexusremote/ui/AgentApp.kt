@@ -98,18 +98,29 @@ fun AgentApp(viewModel: AgentViewModel) {
   val isPairingLoading by viewModel.isPairingLoading.collectAsState()
   val screenShareSession by viewModel.screenShareRequestedSession.collectAsState()
 
-  // Runtime permissions launcher (Location, Camera, Microphone, Notifications)
+  var showAllFilesDialog by remember { mutableStateOf(false) }
+
+  // Runtime permissions launcher (Storage, Photos, Location, Camera, Microphone, Notifications)
   val requestPermissionsLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestMultiplePermissions()
   ) { _ ->
     viewModel.refreshPermissions()
     viewModel.refreshTelemetry()
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&
+      !viewModel.permissionManager.isAllFilesAccessGranted()
+    ) {
+      showAllFilesDialog = true
+    }
   }
 
   androidx.compose.runtime.LaunchedEffect(Unit) {
     val ungranted = viewModel.permissionManager.getRequiredRuntimePermissions()
     if (ungranted.isNotEmpty()) {
       requestPermissionsLauncher.launch(ungranted)
+    } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&
+      !viewModel.permissionManager.isAllFilesAccessGranted()
+    ) {
+      showAllFilesDialog = true
     }
   }
 
@@ -218,6 +229,35 @@ fun AgentApp(viewModel: AgentViewModel) {
       confirmButton = {
         TextButton(onClick = { viewModel.rejectPairing() }) {
           Text("Dismiss", color = Color.Gray)
+        }
+      }
+    )
+  }
+
+  // Dialog: Storage & All Files Access Prompt (Android 11+)
+  if (showAllFilesDialog) {
+    AlertDialog(
+      onDismissRequest = { showAllFilesDialog = false },
+      icon = { Icon(Icons.Default.Security, contentDescription = null, tint = NexusCyan) },
+      title = { Text("Full Storage Access", fontWeight = FontWeight.Bold) },
+      text = {
+        Text("To enable full remote file explorer, downloads, and directory management from the Control-XP web console, please enable 'All files access' in Android settings.")
+      },
+      confirmButton = {
+        Button(
+          onClick = {
+            showAllFilesDialog = false
+            viewModel.permissionManager.requestManageAllFilesAccess()
+          },
+          colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
+          modifier = Modifier.testTag("grant_all_files_dialog_btn")
+        ) {
+          Text("Allow in Settings", color = Color(0xFF0F172A), fontWeight = FontWeight.Bold)
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { showAllFilesDialog = false }) {
+          Text("Later", color = Color.Gray)
         }
       }
     )
@@ -363,6 +403,7 @@ fun DashboardTab(
   val ungrantedRuntime = remember(telemetry) { viewModel.permissionManager.getRequiredRuntimePermissions() }
   val isAccessibilityEnabled = remember(telemetry) { viewModel.permissionManager.isAccessibilityServiceEnabled() }
   val isBatteryOptimized = remember(telemetry) { !viewModel.permissionManager.isIgnoringBatteryOptimizations() }
+  val isAllFilesGranted = remember(telemetry) { viewModel.permissionManager.isAllFilesAccessGranted() }
 
   LazyColumn(
     modifier = Modifier.fillMaxSize(),
@@ -370,7 +411,7 @@ fun DashboardTab(
     verticalArrangement = Arrangement.spacedBy(16.dp)
   ) {
     // 0. Permission Warning Banner if any permission missing
-    if (ungrantedRuntime.isNotEmpty() || !isAccessibilityEnabled || isBatteryOptimized) {
+    if (ungrantedRuntime.isNotEmpty() || !isAccessibilityEnabled || isBatteryOptimized || !isAllFilesGranted) {
       item {
         Card(
           shape = RoundedCornerShape(14.dp),
@@ -381,11 +422,11 @@ fun DashboardTab(
             Row(verticalAlignment = Alignment.CenterVertically) {
               Icon(Icons.Default.Warning, contentDescription = null, tint = NexusAmber, modifier = Modifier.size(20.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("Background Operations Alert", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
+              Text("Permissions & Capabilities Alert", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = NexusAmber)
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-              "Unrestricted battery and touch accessibility permissions are recommended for robust background telemetry and remote control.",
+              "Full storage, battery optimization, and accessibility permissions are recommended for full remote file browsing and controls.",
               fontSize = 12.sp,
               color = Color.LightGray,
               lineHeight = 16.sp
@@ -401,13 +442,22 @@ fun DashboardTab(
                   Text("Perms", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
               }
-              if (isBatteryOptimized) {
+              if (!isAllFilesGranted) {
                 Button(
-                  onClick = { viewModel.permissionManager.requestIgnoreBatteryOptimizations() },
+                  onClick = { viewModel.permissionManager.requestManageAllFilesAccess() },
                   colors = ButtonDefaults.buttonColors(containerColor = NexusCyan),
                   modifier = Modifier.weight(1f)
                 ) {
-                  Text("Battery", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                  Text("Storage", color = Color(0xFF0F172A), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+              }
+              if (isBatteryOptimized) {
+                Button(
+                  onClick = { viewModel.permissionManager.requestIgnoreBatteryOptimizations() },
+                  colors = ButtonDefaults.buttonColors(containerColor = NexusIndigo),
+                  modifier = Modifier.weight(1f)
+                ) {
+                  Text("Battery", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
               }
               if (!isAccessibilityEnabled) {

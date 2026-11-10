@@ -62,4 +62,17 @@ class NexusRemoteRobolectricTest {
     assertNull(unknownRes)
     assertNotNull(unknownErr)
   }
+
+  @Test
+  fun testRequiredRuntimePermissionsContainsStorageAndPhotos() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val permissionManager = com.example.nexusremote.permissions.PermissionManager(context)
+    val requiredPerms = permissionManager.getRequiredRuntimePermissions().toList()
+
+    // Verify storage/media permissions are present when ungranted
+    assertTrue(
+      requiredPerms.contains(android.Manifest.permission.READ_MEDIA_IMAGES) ||
+      requiredPerms.contains(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+    )
+  }
 }

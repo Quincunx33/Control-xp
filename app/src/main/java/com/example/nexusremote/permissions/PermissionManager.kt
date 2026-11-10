@@ -210,22 +210,62 @@ class PermissionManager(private val context: Context) {
     }
   }
 
+  fun isAllFilesAccessGranted(): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        android.os.Environment.isExternalStorageManager()
+      } catch (_: Throwable) {
+        false
+      }
+    } else {
+      isGranted(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+  }
+
   fun getRequiredRuntimePermissions(): Array<String> {
     val perms = mutableListOf<String>()
 
+    // 1. Storage & Photos/Media (across all Android OS versions)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (!isGranted(Manifest.permission.READ_MEDIA_IMAGES)) {
+        perms.add(Manifest.permission.READ_MEDIA_IMAGES)
+      }
+      if (!isGranted(Manifest.permission.READ_MEDIA_VIDEO)) {
+        perms.add(Manifest.permission.READ_MEDIA_VIDEO)
+      }
+      if (!isGranted(Manifest.permission.READ_MEDIA_AUDIO)) {
+        perms.add(Manifest.permission.READ_MEDIA_AUDIO)
+      }
+    } else {
+      if (!isGranted(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+        perms.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+      }
+      if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !isGranted(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+      }
+    }
+
+    // 2. Location (GPS & Network)
     if (!isGranted(Manifest.permission.ACCESS_FINE_LOCATION) && !isGranted(Manifest.permission.ACCESS_COARSE_LOCATION)) {
       perms.add(Manifest.permission.ACCESS_FINE_LOCATION)
       perms.add(Manifest.permission.ACCESS_COARSE_LOCATION)
     }
+
+    // 3. Camera
     if (!isGranted(Manifest.permission.CAMERA)) {
       perms.add(Manifest.permission.CAMERA)
     }
+
+    // 4. Microphone / Audio
     if (!isGranted(Manifest.permission.RECORD_AUDIO)) {
       perms.add(Manifest.permission.RECORD_AUDIO)
     }
+
+    // 5. Notifications (Android 13+)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isGranted(Manifest.permission.POST_NOTIFICATIONS)) {
       perms.add(Manifest.permission.POST_NOTIFICATIONS)
     }
+
     return perms.toTypedArray()
   }
 
