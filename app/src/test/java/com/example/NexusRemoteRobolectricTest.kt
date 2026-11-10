@@ -22,7 +22,7 @@ class NexusRemoteRobolectricTest {
   fun testAppNameResource() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val appName = context.getString(R.string.app_name)
-    assertEquals("Nexus Remote", appName)
+    assertEquals("Control-XP", appName)
   }
 
   @Test

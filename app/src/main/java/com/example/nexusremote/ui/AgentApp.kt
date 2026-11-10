@@ -832,7 +832,7 @@ fun PermissionsTab(
 
 @Composable
 fun SettingsTab(viewModel: AgentViewModel) {
-  var serverInput by remember { mutableStateOf("") }
+  var serverInput by remember { mutableStateOf(viewModel.sessionManager.serverUrl) }
   var isSaved by remember { mutableStateOf(false) }
   var selectedSyncInterval by remember { mutableStateOf(15) }
   var showResetConfirm by remember { mutableStateOf(false) }

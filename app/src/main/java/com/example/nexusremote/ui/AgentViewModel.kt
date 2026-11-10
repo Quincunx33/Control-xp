@@ -30,6 +30,11 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
   val telemetryCollector = DeviceTelemetryCollector(application)
   val permissionManager = PermissionManager(application)
 
+  val themePreferenceManager = com.example.nexusremote.data.ThemePreferenceManager(application)
+
+  private val _isDarkTheme = MutableStateFlow(true)
+  val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+
   private var apiService: NexusApiService = NexusApiClient.createService(sessionManager.serverUrl)
 
   private val _telemetry = MutableStateFlow(telemetryCollector.collectTelemetry())
@@ -74,8 +79,29 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
   private var pairingPollJob: Job? = null
 
   init {
-    com.example.nexusremote.services.NexusRemoteService.start(application)
+    viewModelScope.launch {
+      try {
+        themePreferenceManager.darkThemeFlow.collect { enabled ->
+          _isDarkTheme.value = enabled
+        }
+      } catch (_: Throwable) {}
+    }
+    // Launch background service safely in coroutine after UI has appeared
+    viewModelScope.launch {
+      delay(1000)
+      try {
+        com.example.nexusremote.services.NexusRemoteService.start(application)
+      } catch (e: Throwable) {
+        android.util.Log.w("AgentViewModel", "Could not start background service: ${e.message}")
+      }
+    }
     ensureDeviceRegistered()
+  }
+
+  fun setDarkTheme(enabled: Boolean) {
+    viewModelScope.launch {
+      themePreferenceManager.setDarkTheme(enabled)
+    }
   }
 
   fun updateServerUrl(newUrl: String) {
@@ -88,12 +114,18 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     viewModelScope.launch {
       if (!sessionManager.isRegistered) {
         try {
+          val resString = try {
+            val metrics = getApplication<Application>().resources.displayMetrics
+            "${metrics.widthPixels}x${metrics.heightPixels}"
+          } catch (_: Throwable) {
+            "1080x1920"
+          }
           val req = RegisterDeviceRequest(
             name = sessionManager.deviceName,
             model = Build.MODEL,
             androidVersion = Build.VERSION.RELEASE,
             appVersion = "1.0.0",
-            screenRes = "${getApplication<Application>().resources.displayMetrics.widthPixels}x${getApplication<Application>().resources.displayMetrics.heightPixels}"
+            screenRes = resString
           )
           val res = apiService.registerDevice(req)
           if (res.isSuccessful && res.body() != null) {

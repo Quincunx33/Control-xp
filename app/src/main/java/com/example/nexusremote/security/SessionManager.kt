@@ -9,7 +9,7 @@ class SessionManager(context: Context) {
     context.getSharedPreferences("nexus_remote_agent_prefs", Context.MODE_PRIVATE)
 
   var serverUrl: String
-    get() = prefs.getString("server_url", "") ?: ""
+    get() = prefs.getString("server_url", "https://ais-dev-uvj7ghc5qbsxb3devsdsgw-360203191339.asia-east1.run.app") ?: "https://ais-dev-uvj7ghc5qbsxb3devsdsgw-360203191339.asia-east1.run.app"
     set(value) = prefs.edit().putString("server_url", value.trim().removeSuffix("/")).apply()
 
   var deviceId: String?

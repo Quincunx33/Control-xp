@@ -94,10 +94,14 @@ class PermissionManager(private val context: Context) {
     )
 
     // Storage & Media (All Files Access for full device file manager / anti-theft)
-    val isStorageGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      android.os.Environment.isExternalStorageManager()
-    } else {
-      isGranted(Manifest.permission.READ_EXTERNAL_STORAGE)
+    val isStorageGranted = try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        android.os.Environment.isExternalStorageManager()
+      } else {
+        isGranted(Manifest.permission.READ_EXTERNAL_STORAGE)
+      }
+    } catch (_: Throwable) {
+      false
     }
 
     items.add(
@@ -146,10 +150,14 @@ class PermissionManager(private val context: Context) {
   }
 
   fun isIgnoringBatteryOptimizations(): Boolean {
-    val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      pm.isIgnoringBatteryOptimizations(context.packageName)
-    } else {
+    return try {
+      val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && pm != null) {
+        pm.isIgnoringBatteryOptimizations(context.packageName)
+      } else {
+        true
+      }
+    } catch (_: Throwable) {
       true
     }
   }
@@ -162,33 +170,43 @@ class PermissionManager(private val context: Context) {
       }
       try {
         context.startActivity(intent)
-      } catch (_: Exception) {
+      } catch (_: Throwable) {
         // Fallback to settings page
-        val altIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
-          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(altIntent)
+        try {
+          val altIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          }
+          context.startActivity(altIntent)
+        } catch (_: Throwable) {}
       }
     }
   }
 
   fun isGranted(permission: String): Boolean {
-    return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    return try {
+      ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    } catch (_: Throwable) {
+      false
+    }
   }
 
   fun isAccessibilityServiceEnabled(): Boolean {
-    val enabledServicesSetting = Settings.Secure.getString(
-      context.contentResolver,
-      Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-    ) ?: return false
+    return try {
+      val enabledServicesSetting = Settings.Secure.getString(
+        context.contentResolver,
+        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+      ) ?: return false
 
-    val pkgName = context.packageName
-    val expectedComponentName = ComponentName(context, NexusAccessibilityService::class.java)
+      val pkgName = context.packageName
+      val expectedComponentName = ComponentName(context, NexusAccessibilityService::class.java)
 
-    return enabledServicesSetting.split(":").any { serviceStr ->
-      serviceStr.contains(pkgName, ignoreCase = true) && serviceStr.contains("NexusAccessibilityService", ignoreCase = true) ||
-          serviceStr.equals(expectedComponentName.flattenToString(), ignoreCase = true) ||
-          serviceStr.equals(expectedComponentName.flattenToShortString(), ignoreCase = true)
+      enabledServicesSetting.split(":").any { serviceStr ->
+        serviceStr.contains(pkgName, ignoreCase = true) && serviceStr.contains("NexusAccessibilityService", ignoreCase = true) ||
+            serviceStr.equals(expectedComponentName.flattenToString(), ignoreCase = true) ||
+            serviceStr.equals(expectedComponentName.flattenToShortString(), ignoreCase = true)
+      }
+    } catch (_: Throwable) {
+      false
     }
   }
 

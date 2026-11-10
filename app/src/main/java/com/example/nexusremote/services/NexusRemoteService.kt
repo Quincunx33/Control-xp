@@ -29,6 +29,7 @@ class NexusRemoteService : Service() {
     companion object {
         private const val CHANNEL_ID = "nexus_remote_service_channel"
         private const val NOTIFICATION_ID = 1001
+        private const val TAG = "NexusRemoteService"
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -36,17 +37,25 @@ class NexusRemoteService : Service() {
         private var instance: NexusRemoteService? = null
 
         fun start(context: Context) {
-            val intent = Intent(context, NexusRemoteService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                val intent = Intent(context, NexusRemoteService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+            } catch (e: Throwable) {
+                android.util.Log.w(TAG, "Cannot start foreground service yet (system restriction): ${e.message}")
             }
         }
 
         fun stop(context: Context) {
-            val intent = Intent(context, NexusRemoteService::class.java)
-            context.stopService(intent)
+            try {
+                val intent = Intent(context, NexusRemoteService::class.java)
+                context.stopService(intent)
+            } catch (e: Throwable) {
+                android.util.Log.w(TAG, "Error stopping service: ${e.message}")
+            }
         }
     }
 
@@ -70,11 +79,7 @@ class NexusRemoteService : Service() {
         commandExecutor = CommandExecutor(
             context = this,
             telemetryCollector = telemetryCollector,
-            onScreenShareRequested = { sessionId ->
-                // In a service, we don't have a direct way to show UI, 
-                // but we could send a broadcast or update a shared state.
-                // For now, we'll rely on the UI observing the state if it's open.
-            }
+            onScreenShareRequested = { _ -> }
         )
 
         webSocketClient = com.example.nexusremote.network.NexusWebSocketProvider.getClient(
@@ -84,19 +89,39 @@ class NexusRemoteService : Service() {
             commandExecutor
         )
 
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, createNotification())
+        try {
+            createNotificationChannel()
+            val notification = createNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (e: Throwable) {
+            android.util.Log.e(TAG, "Failed to start foreground notification: ${e.message}", e)
+            // If foreground start fails due to Android 14 restrictions, stop self cleanly rather than crash process
+            stopSelf()
+            return
+        }
         
         connectIfRegistered()
     }
 
     private fun connectIfRegistered() {
-        if (sessionManager.isRegistered) {
-            val devId = sessionManager.deviceId
-            val devKey = sessionManager.deviceKey
-            if (devId != null && devKey != null) {
-                webSocketClient.connect(sessionManager.serverUrl, devId, devKey)
+        try {
+            if (sessionManager.isRegistered) {
+                val devId = sessionManager.deviceId
+                val devKey = sessionManager.deviceKey
+                if (devId != null && devKey != null) {
+                    webSocketClient.connect(sessionManager.serverUrl, devId, devKey)
+                }
             }
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "Error during connectIfRegistered: ${e.message}")
         }
     }
 
@@ -104,16 +129,20 @@ class NexusRemoteService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "Nexus Remote Service",
+                "Control-XP Background Service",
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                description = "Maintains real-time link with Control-XP management console"
+            }
             val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
+            manager?.createNotificationChannel(serviceChannel)
         }
     }
 
     private fun createNotification(): Notification {
-        val notificationIntent = Intent(this, MainActivity::class.java)
+        val notificationIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
@@ -122,11 +151,12 @@ class NexusRemoteService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Nexus Remote Active")
-            .setContentText("Maintaining secure connection in background")
-            .setSmallIcon(android.R.drawable.ic_menu_compass) // Use a better icon if available
+            .setContentTitle("Control-XP Active")
+            .setContentText("Device is securely connected in background")
+            .setSmallIcon(com.example.R.drawable.ic_stat_nexus)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
 
@@ -137,7 +167,9 @@ class NexusRemoteService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        webSocketClient.disconnect()
+        try {
+            webSocketClient.disconnect()
+        } catch (_: Throwable) {}
         _isRunning.value = false
         instance = null
         super.onDestroy()

@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.nexusremote.ui.AgentApp
 import com.example.nexusremote.ui.AgentViewModel
 import com.example.ui.theme.MyApplicationTheme
@@ -16,7 +18,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme(darkTheme = true) {
+      val darkTheme by viewModel.isDarkTheme.collectAsStateWithLifecycle()
+      MyApplicationTheme(darkTheme = darkTheme) {
         AgentApp(viewModel = viewModel)
       }
     }

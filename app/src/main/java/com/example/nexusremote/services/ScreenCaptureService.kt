@@ -28,25 +28,32 @@ class ScreenCaptureService : Service() {
       return START_NOT_STICKY
     }
 
-    val notification = buildForegroundNotification()
+    try {
+      val notification = buildForegroundNotification()
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      startForeground(
-        NOTIFICATION_ID,
-        notification,
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-      )
-    } else {
-      startForeground(NOTIFICATION_ID, notification)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        startForeground(
+          NOTIFICATION_ID,
+          notification,
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+        )
+      } else {
+        startForeground(NOTIFICATION_ID, notification)
+      }
+      isStreaming = true
+    } catch (e: Throwable) {
+      android.util.Log.e("ScreenCaptureService", "Failed to startForeground: ${e.message}", e)
+      stopSelf()
+      return START_NOT_STICKY
     }
-
-    isStreaming = true
     return START_STICKY
   }
 
   private fun stopScreenCapture() {
     isStreaming = false
-    stopForeground(STOP_FOREGROUND_REMOVE)
+    try {
+      stopForeground(STOP_FOREGROUND_REMOVE)
+    } catch (_: Throwable) {}
     stopSelf()
   }
 
@@ -54,7 +61,7 @@ class ScreenCaptureService : Service() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val channel = NotificationChannel(
         CHANNEL_ID,
-        "NEXUS Screen Streaming",
+        "Control-XP Screen Streaming",
         NotificationManager.IMPORTANCE_LOW
       ).apply {
         description = "Indicates an active user-approved screen streaming session"
@@ -66,7 +73,7 @@ class ScreenCaptureService : Service() {
 
   private fun buildForegroundNotification(): Notification {
     val openIntent = Intent(this, MainActivity::class.java).apply {
-      flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+      flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
     val openPendingIntent = PendingIntent.getActivity(
       this, 0, openIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -80,12 +87,12 @@ class ScreenCaptureService : Service() {
     )
 
     return NotificationCompat.Builder(this, CHANNEL_ID)
-      .setSmallIcon(android.R.drawable.ic_menu_camera)
-      .setContentTitle("NEXUS Screen Sharing Active")
+      .setSmallIcon(com.example.R.drawable.ic_stat_screen_share)
+      .setContentTitle("Control-XP Screen Sharing Active")
       .setContentText("Display is being streamed to authorized management console")
       .setContentIntent(openPendingIntent)
       .setOngoing(true)
-      .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Sharing", stopPendingIntent)
+      .addAction(com.example.R.drawable.ic_stat_nexus, "Stop Sharing", stopPendingIntent)
       .build()
   }
 

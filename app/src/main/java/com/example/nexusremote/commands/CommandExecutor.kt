@@ -553,15 +553,19 @@ class CommandExecutor(
   }
 
   private fun showNotification(title: String, message: String) {
-    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-    val notif = NotificationCompat.Builder(context, CHANNEL_ID)
-      .setSmallIcon(android.R.drawable.ic_dialog_alert)
-      .setContentTitle(title)
-      .setContentText(message)
-      .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .setAutoCancel(true)
-      .build()
-    nm?.notify(NOTIFICATION_ID, notif)
+    try {
+      val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+      val notif = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(com.example.R.drawable.ic_stat_nexus)
+        .setContentTitle(title)
+        .setContentText(message)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setAutoCancel(true)
+        .build()
+      nm?.notify(NOTIFICATION_ID, notif)
+    } catch (e: Throwable) {
+      android.util.Log.w("CommandExecutor", "Could not show notification alert: ${e.message}")
+    }
   }
 
   companion object {
