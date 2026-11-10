@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nexusremote.commands.CommandExecutor
 import com.example.nexusremote.data.model.ApprovePairingRequest
+import com.example.nexusremote.data.model.LoginRequest
+import com.example.nexusremote.data.model.RegisterAccountRequest
 import com.example.nexusremote.data.model.DevicePermissionItem
 import com.example.nexusremote.data.model.PairingRequest
 import com.example.nexusremote.data.model.RegisterDeviceRequest
@@ -35,7 +37,19 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
   private val _isDarkTheme = MutableStateFlow(true)
   val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
 
-  private var apiService: NexusApiService = NexusApiClient.createService(sessionManager.serverUrl)
+  private var apiService: NexusApiService = NexusApiClient.createService(sessionManager.serverUrl) { sessionManager.operatorToken }
+
+  private val _isAuthenticated = MutableStateFlow(!sessionManager.operatorToken.isNullOrBlank())
+  val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+  private val _authLoading = MutableStateFlow(false)
+  val authLoading: StateFlow<Boolean> = _authLoading.asStateFlow()
+
+  private val _authError = MutableStateFlow<String?>(null)
+  val authError: StateFlow<String?> = _authError.asStateFlow()
+
+  private val _accountName = MutableStateFlow<String?>(null)
+  val accountName: StateFlow<String?> = _accountName.asStateFlow()
 
   private val _telemetry = MutableStateFlow(telemetryCollector.collectTelemetry())
   val telemetry: StateFlow<TelemetryData> = _telemetry.asStateFlow()
@@ -98,6 +112,46 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     ensureDeviceRegistered()
   }
 
+  fun authenticate(email: String, password: String, name: String? = null) {
+    if (_authLoading.value) return
+    _authLoading.value = true
+    _authError.value = null
+    viewModelScope.launch {
+      try {
+        if (!name.isNullOrBlank()) {
+          val registration = apiService.registerAccount(RegisterAccountRequest(name = name.trim(), email = email.trim(), password = password))
+          if (!registration.isSuccessful) {
+            throw IllegalStateException(registration.errorBody()?.string()?.take(240) ?: "Account registration failed (${registration.code()})")
+          }
+        }
+        val response = apiService.login(LoginRequest(email = email.trim(), password = password, deviceInfo = "Android device"))
+        val body = response.body()
+        if (!response.isSuccessful || body == null || body.token.isBlank()) {
+          throw IllegalStateException(response.errorBody()?.string()?.take(240) ?: "Sign in failed (${response.code()})")
+        }
+        sessionManager.operatorToken = body.token
+        _accountName.value = body.user.name
+        _isAuthenticated.value = true
+        connectWebSocket()
+      } catch (error: Exception) {
+        _authError.value = error.message ?: "Could not connect to the account service"
+      } finally {
+        _authLoading.value = false
+      }
+    }
+  }
+
+  fun logout() {
+    viewModelScope.launch {
+      try { apiService.logout() } catch (_: Exception) { }
+      sessionManager.operatorToken = null
+      _accountName.value = null
+      _isAuthenticated.value = false
+      webSocketClient.disconnect()
+      connectWebSocket()
+    }
+  }
+
   fun setDarkTheme(enabled: Boolean) {
     viewModelScope.launch {
       themePreferenceManager.setDarkTheme(enabled)
@@ -106,7 +160,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
 
   fun updateServerUrl(newUrl: String) {
     sessionManager.serverUrl = newUrl
-    apiService = NexusApiClient.createService(sessionManager.serverUrl)
+    apiService = NexusApiClient.createService(sessionManager.serverUrl) { sessionManager.operatorToken }
     ensureDeviceRegistered()
   }
 
