@@ -89,6 +89,12 @@ fun AgentApp(viewModel: AgentViewModel) {
   var selectedTab by remember { mutableStateOf(0) }
   val context = LocalContext.current
 
+  val isAuthenticated by viewModel.isAuthenticated.collectAsState()
+  if (!isAuthenticated) {
+    AccountGate(viewModel)
+    return
+  }
+
   val connState by viewModel.connectionState.collectAsState()
   val lastLog by viewModel.lastLog.collectAsState()
   val telemetry by viewModel.telemetry.collectAsState()
@@ -1112,6 +1118,22 @@ fun SettingsTab(viewModel: AgentViewModel) {
             ) {
               Text("Sync Stats", fontSize = 11.sp)
             }
+          }
+        }
+      }
+    }
+
+    item {
+      Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+      ) {
+        Column(Modifier.padding(18.dp)) {
+          Text("Account", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+          Text("Sign out of this account on this Android device.", fontSize = 12.sp, color = Color.Gray)
+          Spacer(Modifier.height(12.dp))
+          OutlinedButton(onClick = { viewModel.logout() }, modifier = Modifier.fillMaxWidth()) {
+            Text("Sign out")
           }
         }
       }
