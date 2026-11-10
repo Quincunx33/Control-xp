@@ -23,6 +23,9 @@ from nexus.security.tokens import create_token, decode_token, generate_pairing_c
 from nexus.security.trusted_proxy import resolve_client_ip
 from nexus.security.bot_guard_integration import get_bot_guard
 from nexus.auth.service import register_user, authenticate_user, verify_session, revoke_session
+from nexus.auth.middleware import require_auth
+from limbo.http import Request
+from nexus.websocket.gateway import WebSocketGateway
 from nexus.devices.registry import (
     register_device, get_device, list_devices, rename_device,
     revoke_device, delete_device, update_device_status, update_device_permissions
@@ -100,9 +103,68 @@ class TestNexusRemote(unittest.TestCase):
         self.assertIsNotNone(session)
         self.assertEqual(session["user"]["id"], user["id"])
 
+        anonymous_user, anonymous_error = require_auth(Request())
+        self.assertIsNone(anonymous_user)
+        self.assertEqual(anonymous_error.status, 401)
+        authenticated_user, auth_error = require_auth(Request(headers={"Authorization": f"Bearer {token}"}))
+        self.assertIsNone(auth_error)
+        self.assertEqual(authenticated_user["id"], user["id"])
+
         # Logout & revocation
         self.assertTrue(revoke_session(token))
         self.assertIsNone(verify_session(token))
+        revoked_user, revoked_error = require_auth(Request(headers={"Authorization": f"Bearer {token}"}))
+        self.assertIsNone(revoked_user)
+        self.assertEqual(revoked_error.status, 401)
+
+    def test_04b_websocket_rejects_anonymous_user(self):
+        class FakeSocket:
+            def __init__(self):
+                self.sent = []
+                self.closed = None
+
+            def send(self, message):
+                self.sent.append(message)
+
+            def close(self, code, reason):
+                self.closed = (code, reason)
+
+        gateway = WebSocketGateway()
+        socket = FakeSocket()
+        gateway.register_connection(socket)
+        gateway._handle_auth(socket, {"type": "auth"})
+        self.assertEqual(socket.closed[0], 4001)
+        self.assertIn('"type": "auth_error"', socket.sent[0])
+        self.assertFalse(gateway.connections[socket]["authenticated"])
+        self.assertEqual(gateway.user_clients, {})
+
+    def test_04c_websocket_events_are_owner_scoped(self):
+        class FakeSocket:
+            def __init__(self):
+                self.sent = []
+
+            def send(self, message):
+                self.sent.append(message)
+
+            def close(self, code, reason):
+                pass
+
+        owner = register_user(f"ws_owner_{int(time.time())}@nexus.local", "OwnerPass2026!", "Device Owner")
+        other = register_user(f"ws_other_{int(time.time())}@nexus.local", "OtherPass2026!", "Other User")
+        device = register_device("Private device", "Test model", "14", "1.0", user_id=owner["id"])
+        owner_token = authenticate_user(owner["email"], "OwnerPass2026!")["token"]
+        other_token = authenticate_user(other["email"], "OtherPass2026!")["token"]
+        gateway = WebSocketGateway()
+        owner_socket, other_socket = FakeSocket(), FakeSocket()
+        gateway.register_connection(owner_socket)
+        gateway.register_connection(other_socket)
+        gateway._handle_auth(owner_socket, {"type": "auth", "token": owner_token})
+        gateway._handle_auth(other_socket, {"type": "auth", "token": other_token})
+        owner_socket.sent.clear()
+        other_socket.sent.clear()
+        gateway.broadcast_to_subscribers(device["device_id"], {"type": "device_telemetry", "device_id": device["device_id"]})
+        self.assertEqual(len(owner_socket.sent), 1)
+        self.assertEqual(other_socket.sent, [])
 
     def test_05_device_registration_and_status(self):
         dev = register_device(
@@ -141,6 +203,7 @@ class TestNexusRemote(unittest.TestCase):
     def test_06_secure_device_pairing_workflow(self):
         # 1. Create user and device
         user = register_user(f"pair_{int(time.time())}@nexus.local", "SuperSecret99!", "Device Owner")
+        other_user = register_user(f"pair_other_{int(time.time())}@nexus.local", "OtherSecret99!", "Other Owner")
         dev = register_device(
             name="Galaxy Tab S9",
             model="SM-X710",
@@ -148,6 +211,8 @@ class TestNexusRemote(unittest.TestCase):
             app_version="1.0.0"
         )
         dev_id = dev["device_id"]
+        self.assertEqual(list_devices(user["id"]), [])
+        self.assertIsNone(get_device(dev_id, user_id=user["id"]))
 
         # 2. Android app initiates pairing request
         pair_req = create_pairing_request(dev_id, device_info="Galaxy Tab S9 (Android 14)")
@@ -169,6 +234,9 @@ class TestNexusRemote(unittest.TestCase):
         user_devices = list_devices(user["id"])
         dev_ids = [d["id"] for d in user_devices]
         self.assertIn(dev_id, dev_ids)
+        self.assertEqual(list_devices(other_user["id"]), [])
+        self.assertIsNone(get_device(dev_id, user_id=other_user["id"]))
+        self.assertFalse(rename_device(dev_id, other_user["id"], "Stolen device"))
 
     def test_07_commands_pipeline_and_validation(self):
         user = register_user(f"cmd_{int(time.time())}@nexus.local", "CommandMaster123!", "Admin")
@@ -225,12 +293,17 @@ class TestNexusRemote(unittest.TestCase):
     def test_10_file_transfer_service(self):
         user = register_user(f"file_{int(time.time())}@nexus.local", "FileMaster123!", "File Operator")
         dev = register_device("File Device", "Model X", "14", "1.0", user_id=user["id"])
+        other = register_user(f"file_other_{int(time.time())}@nexus.local", "OtherFilePass2026!", "Other User")
+        with self.assertRaises(ValueError):
+            create_file_transfer(dev["device_id"], other["id"], "unauthorized.txt", "UPLOAD")
         transfer = create_file_transfer(dev["device_id"], user["id"], "test_report.pdf", "UPLOAD")
         t_id = transfer["transfer_id"]
         self.assertEqual(transfer["status"], "REQUESTED")
 
         content = b"NEXUS REMOTE ENCRYPTED PAYLOAD TEST BYTES"
-        path = save_uploaded_file(t_id, content)
+        with self.assertRaises(ValueError):
+            save_uploaded_file(t_id, content, other["id"])
+        path = save_uploaded_file(t_id, content, user["id"])
         self.assertTrue(os.path.exists(path))
         saved = get_file_transfer(t_id, user["id"])
         self.assertEqual(saved["status"], "COMPLETED")

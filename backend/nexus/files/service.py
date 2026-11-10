@@ -18,6 +18,9 @@ def create_file_transfer(
     filesize: int = 0,
     checksum: Optional[str] = None
 ) -> dict[str, Any]:
+    device = fetch_one("SELECT id, status FROM devices WHERE id = ? AND user_id = ?;", (device_id, user_id))
+    if not device or device["status"] == "REVOKED":
+        raise ValueError("Device not found or not owned by user")
     transfer_id = f"ft_{secrets.token_hex(8)}"
     now = time.time()
     clean_name = Path(filename).name
@@ -42,8 +45,8 @@ def create_file_transfer(
         "created_at": now
     }
 
-def save_uploaded_file(transfer_id: str, content: bytes) -> str:
-    transfer = fetch_one("SELECT * FROM file_transfers WHERE id = ?;", (transfer_id,))
+def save_uploaded_file(transfer_id: str, content: bytes, user_id: str) -> str:
+    transfer = fetch_one("SELECT * FROM file_transfers WHERE id = ? AND user_id = ?;", (transfer_id, user_id))
     if not transfer:
         raise ValueError("Transfer not found")
 

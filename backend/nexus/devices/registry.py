@@ -157,8 +157,8 @@ def update_device_permissions(device_id: str, permissions: dict[str, bool]) -> N
 def get_device(device_id: str, user_id: Optional[str] = None) -> Optional[dict[str, Any]]:
     query = "SELECT * FROM devices WHERE id = ?"
     params = [device_id]
-    if user_id and user_id != "usr_default_admin":
-        query += " AND (user_id = ? OR user_id IS NULL)"
+    if user_id is not None:
+        query += " AND user_id = ?"
         params.append(user_id)
     dev = fetch_one(query + ";", tuple(params))
     if not dev:
@@ -171,10 +171,9 @@ def get_device(device_id: str, user_id: Optional[str] = None) -> Optional[dict[s
     return dev
 
 def list_devices(user_id: str) -> list[dict[str, Any]]:
-    if user_id == "usr_default_admin" or not user_id:
-        devices = fetch_all("SELECT * FROM devices ORDER BY created_at DESC;")
-    else:
-        devices = fetch_all("SELECT * FROM devices WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC;", (user_id,))
+    if not user_id:
+        return []
+    devices = fetch_all("SELECT * FROM devices WHERE user_id = ? ORDER BY created_at DESC;", (user_id,))
     for dev in devices:
         status = fetch_one("SELECT * FROM device_status WHERE device_id = ?;", (dev["id"],)) or {}
         perms = fetch_all("SELECT permission, granted FROM device_permissions WHERE device_id = ?;", (dev["id"],))
@@ -188,19 +187,13 @@ def rename_device(device_id: str, user_id: str, new_name: str) -> bool:
         raise ValueError("Device name cannot be empty")
     now = time.time()
     with transaction():
-        if user_id == "usr_default_admin":
-            cur = execute("UPDATE devices SET name = ?, updated_at = ? WHERE id = ?;", (new_name, now, device_id))
-        else:
-            cur = execute("UPDATE devices SET name = ?, updated_at = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL);", (new_name, now, device_id, user_id))
+        cur = execute("UPDATE devices SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?;", (new_name, now, device_id, user_id))
     return cur.rowcount > 0
 
 def revoke_device(device_id: str, user_id: str, client_ip: Optional[str] = None) -> bool:
     now = time.time()
     with transaction():
-        if user_id == "usr_default_admin":
-            cur = execute("UPDATE devices SET status = 'REVOKED', updated_at = ? WHERE id = ?;", (now, device_id))
-        else:
-            cur = execute("UPDATE devices SET status = 'REVOKED', updated_at = ? WHERE id = ? AND (user_id = ? OR user_id IS NULL);", (now, device_id, user_id))
+        cur = execute("UPDATE devices SET status = 'REVOKED', updated_at = ? WHERE id = ? AND user_id = ?;", (now, device_id, user_id))
         if cur.rowcount > 0:
             execute("DELETE FROM device_credentials WHERE device_id = ?;", (device_id,))
     if cur.rowcount > 0:
@@ -210,10 +203,7 @@ def revoke_device(device_id: str, user_id: str, client_ip: Optional[str] = None)
 
 def delete_device(device_id: str, user_id: str, client_ip: Optional[str] = None) -> bool:
     with transaction():
-        if user_id == "usr_default_admin":
-            cur = execute("DELETE FROM devices WHERE id = ?;", (device_id,))
-        else:
-            cur = execute("DELETE FROM devices WHERE id = ? AND (user_id = ? OR user_id IS NULL);", (device_id, user_id))
+        cur = execute("DELETE FROM devices WHERE id = ? AND user_id = ?;", (device_id, user_id))
     if cur.rowcount > 0:
         log_audit("DEVICE_DELETED", user_id=user_id, device_id=device_id, client_ip=client_ip)
         return True

@@ -346,12 +346,15 @@ def create_app() -> Limbo:
 
     @app.post("/api/v1/files/upload/{id}")
     def api_file_upload(request: Request) -> Response:
+        user, err = require_auth(request)
+        if err:
+            return err
         t_id = request.path_params.get("id", "")
         content = request.body
         if not content:
             return Response.json({"error": "Empty file content"}, status=400)
         try:
-            path = save_uploaded_file(t_id, content)
+            path = save_uploaded_file(t_id, content, user["id"])
             return Response.json({"message": "File uploaded successfully", "path": path})
         except ValueError as e:
             return Response.json({"error": str(e)}, status=400)

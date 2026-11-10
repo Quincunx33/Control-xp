@@ -1,6 +1,7 @@
 """NEXUS REMOTE configuration."""
 from __future__ import annotations
 import os
+import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,7 +11,7 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH = os.environ.get("NEXUS_DB_PATH", str(DATA_DIR / "nexus.db"))
-JWT_SECRET = os.environ.get("NEXUS_SECRET_KEY", "nexus-remote-super-secret-production-key-change-in-prod")
+JWT_SECRET = os.environ.get("NEXUS_SECRET_KEY") or secrets.token_hex(32)
 HOST = os.environ.get("NEXUS_HOST", "0.0.0.0")
 PORT = int(os.environ.get("NEXUS_PORT", "8000"))
 

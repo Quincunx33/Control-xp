@@ -103,7 +103,7 @@ const API = {
   },
 
   getToken() {
-    return localStorage.getItem('nexus_token') || 'open_access_token';
+    return localStorage.getItem('nexus_token');
   },
 
   setToken(token) {
@@ -114,10 +114,10 @@ const API = {
   getUser() {
     try {
       const user = localStorage.getItem('nexus_user');
-      return user ? JSON.parse(user) : { id: 'usr_default_admin', email: 'admin@nexus.local', name: 'Operator', role: 'admin' };
+      return user ? JSON.parse(user) : { id: '', email: '', name: 'Account' };
     } catch {
       AppLogger.warn('Saved account details could not be read');
-      return { id: 'usr_default_admin', email: 'admin@nexus.local', name: 'Operator', role: 'admin' };
+      return { id: '', email: '', name: 'Account' };
     }
   },
 
@@ -127,12 +127,20 @@ const API = {
   },
 
   isAuthenticated() {
-    return true;
+    return Boolean(this.getToken());
   },
 
-  logout() {
+  async logout() {
     AppLogger.info('Session reset requested');
-    window.location.reload();
+    try {
+      if (this.getToken()) await this.post('/api/v1/auth/logout', {});
+    } catch (error) {
+      AppLogger.warn('Server logout could not complete; clearing the local session', { code: error.code || 'UNKNOWN' });
+    } finally {
+      this.setToken(null);
+      this.setUser(null);
+      window.location.replace('/login');
+    }
   },
 
   friendlyMessage(status, payload, endpoint = '') {
@@ -190,6 +198,12 @@ const API = {
         }
 
         if (!response.ok) {
+          const isAuthEntry = path === '/api/v1/auth/login' || path === '/api/v1/auth/register';
+          if (response.status === 401 && !isAuthEntry) {
+            this.setToken(null);
+            this.setUser(null);
+            if (!['/login', '/register'].includes(window.location.pathname)) window.location.replace('/login');
+          }
           const error = new APIError(this.friendlyMessage(response.status, payload, endpoint), {
             status: response.status,
             code: payload.code || `HTTP_${response.status}`,
@@ -258,3 +272,7 @@ window.addEventListener('unhandledrejection', (event) => {
   AppLogger.error('Unexpected background task failure', { type: name });
   AppFeedback.error('A background action did not finish. Please try again.');
 });
+
+if (!['/', '/login', '/register'].includes(window.location.pathname) && !API.isAuthenticated()) {
+  window.location.replace('/login');
+}

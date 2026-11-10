@@ -136,14 +136,8 @@ class WebSocketGateway:
                 ws.send(json.dumps({"type": "auth_ok", "role": "user", "user_id": user_id}))
                 return
 
-        # Open Access Fallback: Auto-authenticate operator
-        user_id = "usr_default_admin"
-        with self.lock:
-            if user_id not in self.user_clients:
-                self.user_clients[user_id] = set()
-            self.user_clients[user_id].add(ws)
-            self.connections[ws] = {"authenticated": True, "type": "user", "id": user_id}
-        ws.send(json.dumps({"type": "auth_ok", "role": "user", "user_id": user_id}))
+        ws.send(json.dumps({"type": "auth_error", "message": "Valid user session required"}))
+        ws.close(4001, "Unauthorized")
 
     def _handle_device_message(self, ws: Any, device_id: str, msg: dict[str, Any]) -> None:
         msg_type = msg.get("type")
@@ -245,10 +239,12 @@ class WebSocketGateway:
         return False
 
     def broadcast_to_subscribers(self, device_id: str, payload: dict[str, Any]) -> None:
+        device = get_device(device_id)
+        owner_id = device.get("user_id") if device else None
+        if not owner_id:
+            return
         with self.lock:
-            subscribers = []
-            for uid, ws_set in self.user_clients.items():
-                subscribers.extend(list(ws_set))
+            subscribers = list(self.user_clients.get(owner_id, set()))
 
         payload_str = json.dumps(payload)
         for ws in subscribers:

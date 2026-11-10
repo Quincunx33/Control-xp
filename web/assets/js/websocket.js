@@ -72,6 +72,12 @@ class NexusSocket {
           AppFeedback.warning('Live updates paused. The page will keep trying to reconnect.');
           this.connectionNoticeShown = true;
         }
+        if (event.code === 4001 || event.code === 4003) {
+          API.setToken(null);
+          API.setUser(null);
+          window.location.replace('/login');
+          return;
+        }
         if (event.code !== 1000 && event.code !== 1008) this._scheduleReconnect();
         if (event.code === 1008) AppFeedback.error('The live connection was rejected. Please sign in again.');
       };
