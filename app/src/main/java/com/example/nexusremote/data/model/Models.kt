@@ -81,3 +81,38 @@ data class DevicePermissionItem(
   val description: String,
   val isGranted: Boolean
 )
+
+
+@JsonClass(generateAdapter = true)
+data class RegisterAccountRequest(
+  val name: String,
+  val email: String,
+  val password: String
+)
+
+@JsonClass(generateAdapter = true)
+data class LoginRequest(
+  val email: String,
+  val password: String,
+  @Json(name = "device_info") val deviceInfo: String
+)
+
+@JsonClass(generateAdapter = true)
+data class AuthUser(
+  val id: String,
+  val name: String,
+  val email: String
+)
+
+@JsonClass(generateAdapter = true)
+data class AuthResponse(
+  val token: String,
+  @Json(name = "expires_at") val expiresAt: Double,
+  val user: AuthUser
+)
+
+@JsonClass(generateAdapter = true)
+data class RegisterAccountResponse(
+  val user: AuthUser,
+  val message: String
+)
