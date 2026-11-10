@@ -1,6 +1,10 @@
 package com.example.nexusremote.network
 
 import com.example.nexusremote.data.model.ApprovePairingRequest
+import com.example.nexusremote.data.model.RegisterAccountRequest
+import com.example.nexusremote.data.model.LoginRequest
+import com.example.nexusremote.data.model.AuthResponse
+import com.example.nexusremote.data.model.RegisterAccountResponse
 import com.example.nexusremote.data.model.PairingRequest
 import com.example.nexusremote.data.model.PairingResponse
 import com.example.nexusremote.data.model.PairingStatusResponse
@@ -20,6 +24,15 @@ import retrofit2.http.Path
 import java.util.concurrent.TimeUnit
 
 interface NexusApiService {
+  @POST("/api/v1/auth/register")
+  suspend fun registerAccount(@Body req: RegisterAccountRequest): Response<RegisterAccountResponse>
+
+  @POST("/api/v1/auth/login")
+  suspend fun login(@Body req: LoginRequest): Response<AuthResponse>
+
+  @POST("/api/v1/auth/logout")
+  suspend fun logout(): Response<Map<String, String>>
+
   @POST("/api/v1/devices/register")
   suspend fun registerDevice(@Body req: RegisterDeviceRequest): Response<RegisterDeviceResponse>
 
@@ -41,12 +54,19 @@ object NexusApiClient {
     .add(KotlinJsonAdapterFactory())
     .build()
 
-  fun createService(baseUrl: String): NexusApiService {
+  fun createService(baseUrl: String, tokenProvider: () -> String? = { null }): NexusApiService {
     val logging = HttpLoggingInterceptor().apply {
       level = HttpLoggingInterceptor.Level.BASIC
     }
 
     val okHttpClient = OkHttpClient.Builder()
+      .addInterceptor { chain ->
+        val token = tokenProvider()
+        val request = chain.request().newBuilder().apply {
+          if (!token.isNullOrBlank()) header("Authorization", "Bearer $token")
+        }.build()
+        chain.proceed(request)
+      }
       .addInterceptor(logging)
       .connectTimeout(15, TimeUnit.SECONDS)
       .readTimeout(15, TimeUnit.SECONDS)
